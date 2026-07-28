@@ -1265,40 +1265,101 @@ function openSync(){
     showSync('⚠️ 令牌格式不对，应以 ghp_ 或 github_pat_ 开头。请重新设置。'); return;
   }
   localStorage.setItem(SYNC_TOKEN_KEY, token);
-  showSync('☁️ 令牌已保存，正在连接 GitHub 同步...');
-  syncPull(); // 立即尝试拉取
+  showSync('☁️ 令牌已保存，正在验证并连接 GitHub...');
+  // 先验证令牌是否有效
+  verifyTokenAndSync();
 }
 async function ghApi(method, path, body){
-  const token=localStorage.getItem(SYNC_TOKEN_KEY); if(!token)return null;
+  const token=localStorage.getItem(SYNC_TOKEN_KEY); if(!token)return {status:-1, data:null, msg:'无令牌'};
   const url='https://api.github.com/repos/'+SYNC_OWNER+'/'+SYNC_REPO+path;
-  const opts={method,headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','User-Agent':'DailyMeow-Sync'}};
-  if(body) opts.body=JSON.stringify(body);
-  try{ const r=await fetch(url,opts); return {status:r.status, data:await r.json().catch(()=>null)}; }
-  catch(e){ return {status:0, data:null}; }
+  const opts={
+    method,
+    headers:{
+      'Authorization':'Bearer '+token,
+      'Accept':'application/vnd.github+json',
+      'User-Agent':'DailyMeow-Sync'
+    },
+    cache: 'no-store'  // 禁止缓存，确保每次都发真实请求
+  };
+  if(body !== undefined && body !== null) opts.body=JSON.stringify(body);
+  try{
+    const r=await fetch(url, opts);
+    const text=await r.text();
+    let data=null;
+    try{data=JSON.parse(text);}catch(e){data=text;}
+    return {status:r.status, data:data, msg:r.statusText};
+  }catch(e){
+    return {status:0, data:null, msg:e.message||'网络错误'};
+  }
+}
+async function verifyTokenAndSync(){
+  const res=await ghApi('GET','');
+  if(res.status===200){
+    showSync('✅ 令牌验证通过！正在拉取云端数据...');
+    syncPull();
+  } else if(res.status===401 || res.status===403){
+    showSync('⚠️ 令牌无效或权限不足（HTTP '+res.status+'）。<br>请检查：<br>1. 令牌是否正确复制完整<br>2. 是否勾选了 <b>repo</b> 权限<br>3. 令牌是否已被撤销<br><br><button class="btn btn-secondary sm" onclick="localStorage.removeItem(\''+SYNC_TOKEN_KEY+'\');openSync()">🔄 重新输入令牌</button>');
+    localStorage.removeItem(SYNC_TOKEN_KEY);
+  } else {
+    showSync('⚠️ 无法连接仓库（HTTP '+res.status+'）：'+(res.msg||'')+'<br>尝试继续同步...'); syncPull();
+  }
 }
 async function syncPush(){
   const token=localStorage.getItem(SYNC_TOKEN_KEY); if(!token)return;
-  const content=btoa(unescape(encodeURIComponent(JSON.stringify(getState()))));
-  // 先获取现有文件的 sha（用于更新）
-  const existing=await ghApi('GET','/contents/'+SYNC_PATH);
-  const payload={message:'🐱 sync '+new Date().toLocaleString(), content:content};
-  if(existing && existing.status===200 && existing.data && existing.data.sha) payload.sha=existing.data.sha;
-  const res=await ghApi('PUT','/contents/'+SYNC_PATH, payload);
-  showSync(res && res.status===201 ? '☁️ 已同步到云端 ✅ '+new Date().toLocaleTimeString() : '⚠️ 上传失败 '+(res?res.status:'?')+' — 请检查令牌是否有效');
+  showSync('☁️ 正在上传数据到云端...');
+  try {
+    const stateJson=JSON.stringify(getState(), null, 0); // 紧凑格式减少体积
+    const content=btoa(unescape(encodeURIComponent(stateJson)));
+    // 第一步：检查文件是否存在
+    const existing=await ghApi('GET','/contents/'+SYNC_PATH);
+    let payload;
+    if(existing && existing.status===200 && existing.data && existing.data.sha){
+      // 文件存在 → 更新
+      payload={message:'🐱 sync update '+new Date().toLocaleString(), content:content, sha:existing.data.sha};
+    } else {
+      // 文件不存在 → 新建
+      payload={message:'🐱 sync init '+new Date().toLocaleString(), content:content};
+    }
+    // 第二步：上传
+    const res=await ghApi('PUT','/contents/'+SYNC_PATH, payload);
+    if(res && res.status===201){
+      showSync('☁️ ✅ 已同步到云端！'+new Date().toLocaleTimeString());
+    } else if(res && res.status===200){
+      showSync('☁️ ✅ 数据已更新！'+new Date().toLocaleTimeString());
+    } else {
+      const errDetail=res&&res.data?(res.data.message||JSON.stringify(res.data).slice(0,200)):'';
+      showSync('⚠️ 上传失败 HTTP '+(res?res.status:'?')+'<br>'+errDetail+
+        '<br><br><button class="btn btn-primary sm" onclick="syncPush()">🔄 重试上传</button>'+
+        '<br><br><small style="color:var(--text-muted)">提示：如果持续失败，试试清浏览器缓存后刷新页面</small>');
+    }
+  } catch(e){
+    showSync('⚠️ 上传出错：'+(e.message||e)+'<br><button class="btn btn-primary sm" onclick="syncPush()">🔄 重试</button>');
+  }
 }
 async function syncPull(){
   const token=localStorage.getItem(SYNC_TOKEN_KEY); if(!token)return;
-  const res=await ghApi('GET','/contents/'+SYNC_PATH);
-  if(!res || res.status!==200 || !res.data || !res.data.content) return;
-  try{
-    const raw=atob(res.data.content.replace(/\s/g,''));
-    const data=JSON.parse(raw);
-    if(data && Object.keys(data).length){
-      const before=JSON.stringify(getState());
-      setState(data);
-      if(before!==JSON.stringify(getState())){ renderAll(); restoreMeowDisplays(); showSync('☁️ 已从云端拉取最新数据 ✅ '+new Date().toLocaleTimeString()); }
+  try {
+    const res=await ghApi('GET','/contents/'+SYNC_PATH);
+    if(!res || res.status!==200 || !res.data || !res.data.content) {
+      // 文件不存在是正常的（首次使用），不报错
+      if(res && res.status===404) return; // 首次使用，云端无数据
+      return;
     }
-  }catch(e){}
+    try{
+      const raw=atob(res.data.content.replace(/\s/g,''));
+      const data=JSON.parse(raw);
+      if(data && Object.keys(data).length){
+        const before=JSON.stringify(getState());
+        setState(data);
+        if(before!==JSON.stringify(getState())){
+          renderAll(); restoreMeowDisplays();
+          showSync('☁️ ✅ 已从云端拉取最新数据！'+new Date().toLocaleTimeString());
+        }
+      }
+    }catch(e){
+      console.error('syncPull parse error:', e);
+    }
+  } catch(e){}
 }
 function renderAll(){
   renderStudents(); renderTasks(); renderWater();
