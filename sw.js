@@ -1,6 +1,6 @@
-/* 每日喵喵 工作台 Service Worker —— 离线可访问 + 可安装为 App
-   策略：导航类请求(network-first，保证拿到最新页面)，静态资源(cache-first，加载更快) */
-const CACHE = 'daily-meow-v2';
+/* 每日喵喵 工作台 Service Worker v3 —— 离线可访问 + 可安装为 App
+   策略：只处理同源请求，绝不拦截外部 API（api.github.com 等） */
+const CACHE = 'daily-meow-v3';
 const CORE = ['./', 'index.html', 'manifest.json', 'sw.js'];
 
 self.addEventListener('install', e => {
@@ -18,10 +18,15 @@ self.addEventListener('activate', e => {
 });
 
 self.addEventListener('fetch', e => {
+  // 只处理 GET 方法
   if (e.request.method !== 'GET') return;
+
   const url = new URL(e.request.url);
 
-  // 导航/页面请求：网络优先，失败再回退缓存（永远显示最新内容）
+  // ⚠️ 关键修复：只处理同源请求，外部 API 一律放行！
+  if (url.origin !== location.origin) return;
+
+  // 导航/页面请求：网络优先（永远拿最新页面）
   if (e.request.mode === 'navigate' || url.pathname.endsWith('index.html') || url.pathname.endsWith('/')) {
     e.respondWith(
       fetch(e.request).then(resp => {
@@ -33,7 +38,7 @@ self.addEventListener('fetch', e => {
     return;
   }
 
-  // 静态资源（图片/图标等）：缓存优先，同时后台更新
+  // 同源静态资源：缓存优先 + 后台更新
   e.respondWith(
     caches.match(e.request).then(cached =>
       cached || fetch(e.request).then(resp => {
