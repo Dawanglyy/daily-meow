@@ -847,7 +847,8 @@
         <button id="installBtn" class="btn btn-secondary sm" style="display:none" onclick="installApp()">📲 安装到桌面</button>
         <button class="btn btn-secondary sm" onclick="exportData()">📤 导出备份</button>
         <button class="btn btn-secondary sm" onclick="document.getElementById('importFile').click()">📥 导入备份</button>
-        <button class="btn btn-secondary sm" onclick="openSync()">☁️ 云同步</button>
+        <button class="btn btn-primary sm" onclick="openSync()">☁️ 设置云同步</button>
+        <button class="btn btn-secondary sm" onclick="syncPush()" title="手动上传当前数据到云端">⬆️ 上传</button>
         <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importData(this.files[0])">
       </div>
       <div class="save-summary" id="syncInfo" style="display:none"></div>
@@ -1202,9 +1203,13 @@ function addComm() {
   document.getElementById('cmWho').value=''; document.getElementById('cmContent').value=''; renderComm();
 }
 
-// ===== 数据持久化 & 云同步 =====
+// ===== 数据持久化 & 云同步（GitHub 模式）=====
 const LS_KEY='meow_workbench_v1';
-const SYNC_KEY='meow_sync_url';
+const SYNC_TOKEN_KEY='meow_gh_token';
+// 同步目标仓库（数据存为 sync-data.json）
+const SYNC_OWNER = 'Dawanglyy';
+const SYNC_REPO  = 'daily-meow';
+const SYNC_PATH  = 'sync-data.json';
 function getState(){ return {meow, students, tasks, readTasks, homeworks, submits, attendStatus, rewards, mental, comms}; }
 function setState(st){
   if(!st)return;
@@ -1242,23 +1247,57 @@ function importData(file){
 }
 function showSync(msg){const e=document.getElementById('syncInfo'); if(e){e.style.display='block';e.innerHTML=msg;}}
 function openSync(){
-  const cur=localStorage.getItem(SYNC_KEY)||'';
-  const url=prompt('设置云同步地址（留空查看说明）：\n\n将工作台数据实时同步到该地址。\n需要你部署附带的 sync-server.js（或用任意支持 JSON 的接口）。\n地址需包含 ?key= 参数，例如：\n  http://你的服务器:8787/sync?key=meow\n\n当前地址：'+cur, cur);
-  if(url===null)return;
-  if(url===''){showSync('☁️ 未设置同步地址。<br><br>方式一：用「导出 / 导入备份」在两台设备间手动搬运数据（无需服务器）。<br>方式二：部署 sync-server.js 后填入地址，即可手机 ↔ 电脑实时同步。');localStorage.removeItem(SYNC_KEY);return;}
-  localStorage.setItem(SYNC_KEY,url); showSync('☁️ 已设置同步地址，正在同步...'); syncPush();
+  const cur=localStorage.getItem(SYNC_TOKEN_KEY)||'';
+  const token=prompt(
+    '☁️ 设置云同步（GitHub 模式）\n\n'+
+    '填入你的 GitHub 个人访问令牌(PAT)，手机和电脑的数据就会自动互相同步！\n\n'+
+    '📌 获取方式：github.com → Settings → Developer settings → Personal access tokens → Generate\n'+
+    '   勾选 repo 权限即可\n\n'+
+    '当前令牌：'+(cur ? '已设置（'+cur.slice(0,8)+'...）' : '未设置'), cur);
+  if(token===null)return;
+  if(token===''){
+    localStorage.removeItem(SYNC_TOKEN_KEY);
+    showSync('☁️ 已关闭云同步。数据仍会保存在本机浏览器中。<br><br>要用「导出/导入备份」在设备间搬运数据，请到页面底部操作。');
+    return;
+  }
+  // 验证令牌格式
+  if(!token.startsWith('ghp_') && !token.startsWith('github_pat_')){
+    showSync('⚠️ 令牌格式不对，应以 ghp_ 或 github_pat_ 开头。请重新设置。'); return;
+  }
+  localStorage.setItem(SYNC_TOKEN_KEY, token);
+  showSync('☁️ 令牌已保存，正在连接 GitHub 同步...');
+  syncPull(); // 立即尝试拉取
+}
+async function ghApi(method, path, body){
+  const token=localStorage.getItem(SYNC_TOKEN_KEY); if(!token)return null;
+  const url='https://api.github.com/repos/'+SYNC_OWNER+'/'+SYNC_REPO+path;
+  const opts={method,headers:{'Authorization':'Bearer '+token,'Accept':'application/vnd.github+json','User-Agent':'DailyMeow-Sync'}};
+  if(body) opts.body=JSON.stringify(body);
+  try{ const r=await fetch(url,opts); return {status:r.status, data:await r.json().catch(()=>null)}; }
+  catch(e){ return {status:0, data:null}; }
 }
 async function syncPush(){
-  const url=localStorage.getItem(SYNC_KEY); if(!url)return;
-  try{ const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(getState())});
-    showSync(res.ok?'☁️ 已上传到云端 ✅ '+new Date().toLocaleTimeString():'☁️ 上传失败：'+res.status);
-  }catch(e){showSync('☁️ 无法连接同步服务器（'+(e.message||'')+'），请检查地址或网络');}
+  const token=localStorage.getItem(SYNC_TOKEN_KEY); if(!token)return;
+  const content=btoa(unescape(encodeURIComponent(JSON.stringify(getState()))));
+  // 先获取现有文件的 sha（用于更新）
+  const existing=await ghApi('GET','/contents/'+SYNC_PATH);
+  const payload={message:'🐱 sync '+new Date().toLocaleString(), content:content};
+  if(existing && existing.status===200 && existing.data && existing.data.sha) payload.sha=existing.data.sha;
+  const res=await ghApi('PUT','/contents/'+SYNC_PATH, payload);
+  showSync(res && res.status===201 ? '☁️ 已同步到云端 ✅ '+new Date().toLocaleTimeString() : '⚠️ 上传失败 '+(res?res.status:'?')+' — 请检查令牌是否有效');
 }
 async function syncPull(){
-  const url=localStorage.getItem(SYNC_KEY); if(!url)return;
-  try{ const res=await fetch(url); if(!res.ok)return; const data=await res.json();
-    if(data&&Object.keys(data).length){ const before=JSON.stringify(getState()); setState(data);
-      if(before!==JSON.stringify(getState())){renderAll();restoreMeowDisplays();showSync('☁️ 已从云端拉取最新数据 ✅ '+new Date().toLocaleTimeString());} }
+  const token=localStorage.getItem(SYNC_TOKEN_KEY); if(!token)return;
+  const res=await ghApi('GET','/contents/'+SYNC_PATH);
+  if(!res || res.status!==200 || !res.data || !res.data.content) return;
+  try{
+    const raw=atob(res.data.content.replace(/\s/g,''));
+    const data=JSON.parse(raw);
+    if(data && Object.keys(data).length){
+      const before=JSON.stringify(getState());
+      setState(data);
+      if(before!==JSON.stringify(getState())){ renderAll(); restoreMeowDisplays(); showSync('☁️ 已从云端拉取最新数据 ✅ '+new Date().toLocaleTimeString()); }
+    }
   }catch(e){}
 }
 function renderAll(){
