@@ -1,0 +1,1285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日喵喵</title>
+<meta name="theme-color" content="#F5B5C7">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="每日喵喵">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root {
+    --pink-deep: #F0A0B8;
+    --pink-main: #F5B5C7;
+    --pink-soft: #FBDEE6;
+    --pink-pale: #FFF4F7;
+    --pink-card: rgba(255,255,255,0.82);
+    --pink-glow: rgba(245,181,199,0.25);
+    --rose-text: #C46B85;
+    --rose-dark: #9E4D65;
+    --text-primary: #5A4552;
+    --text-secondary: #8B707E;
+    --text-muted: #B89CA8;
+    --border-light: rgba(196,107,133,0.12);
+    --border-med: rgba(196,107,133,0.22);
+    --radius-pill: 24px;
+    --radius-card: 20px;
+    --radius-sm: 14px;
+    --shadow-sm: 0 2px 10px rgba(240,160,184,0.12);
+    --shadow-md: 0 8px 28px rgba(240,160,184,0.16);
+    --shadow-lg: 0 16px 40px rgba(200,120,150,0.18);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: var(--pink-pale);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    overflow-x: hidden;
+  }
+
+  /* ===== Sidebar ===== */
+  .sidebar {
+    width: 236px;
+    background: linear-gradient(180deg, #F5B5C7 0%, #EE90AA 50%, #E87BA0 100%);
+    display: flex; flex-direction: column; padding: 28px 14px 20px;
+    flex-shrink: 0; height: 100vh; position: sticky; top: 0;
+    box-shadow: 4px 0 24px rgba(232,123,160,0.15);
+  }
+
+  .logo-area { text-align: center; margin-bottom: 24px; }
+  .logo-avatar {
+    width: 72px; height: 72px; margin: 0 auto 10px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.3);
+    padding: 4px;
+    box-shadow: 0 4px 16px rgba(158,77,101,0.3), 0 0 0 2px rgba(255,255,255,0.25);
+    overflow: hidden;
+    transition: transform 0.3s ease;
+  }
+  .logo-avatar:hover { transform: scale(1.08) rotate(3deg); }
+  .logo-avatar img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
+  .logo-name { font-size: 15px; font-weight: 600; color: #fff; letter-spacing: 1px; text-shadow: 0 1px 4px rgba(158,77,101,0.25); }
+  .logo-sub { font-size: 11px; color: rgba(255,255,255,0.78); margin-top: 2px; }
+
+  .nav-menu { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+
+  .nav-item {
+    display: flex; align-items: center; gap: 11px;
+    padding: 13px 14px; border-radius: 16px;
+    cursor: pointer; transition: all 0.25s ease;
+    font-size: 13.5px; color: rgba(255,255,255,0.88);
+    position: relative; user-select: none;
+  }
+  .nav-item:hover { background: rgba(255,255,255,0.18); color: #fff; transform: translateX(2px); }
+  .nav-item.active {
+    background: rgba(255,255,255,0.95);
+    color: var(--rose-dark);
+    font-weight: 600;
+    box-shadow: 0 4px 12px rgba(158,77,101,0.15);
+  }
+  .nav-icon {
+    width: 30px; height: 30px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 17px; flex-shrink: 0;
+  }
+  .nav-badge {
+    margin-left: auto; background: #FF6B8A; color: white;
+    font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 600;
+    box-shadow: 0 2px 6px rgba(255,107,138,0.35);
+  }
+  .sidebar-footer { padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.2); text-align: center; }
+  .sidebar-footer span { font-size: 11px; color: rgba(255,255,255,0.55); }
+
+  /* ===== Main ===== */
+  .main-content { flex: 1; padding: 30px 36px; overflow-y: auto; max-width: 1100px; }
+
+  .module-page { display: none; }
+  .module-page.active { display: block; animation: fadeUp 0.4s ease; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* ===== Card ===== */
+  .card {
+    background: var(--pink-card);
+    backdrop-filter: blur(12px);
+    border-radius: var(--radius-card);
+    border: 1px solid var(--border-light);
+    padding: 22px 26px;
+    margin-bottom: 18px;
+    box-shadow: var(--shadow-sm);
+  }
+  .card-header { display: flex; align-items: center; gap: 8px; margin-bottom: 16px; }
+  .card-title { font-size: 15px; font-weight: 600; color: var(--rose-dark); }
+
+  /* ===== Forms ===== */
+  .form-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; margin-bottom: 14px; }
+  .form-group { display: flex; flex-direction: column; gap: 6px; }
+  .form-label { font-size: 12px; color: var(--text-muted); font-weight: 500; }
+  .form-input, .form-select, .form-textarea {
+    padding: 11px 14px; border: 1.5px solid var(--border-med);
+    border-radius: var(--radius-sm); font-size: 13px; color: var(--text-primary);
+    background: #fff; transition: all 0.2s; outline: none; font-family: inherit;
+  }
+  .form-input:focus, .form-select:focus, .form-textarea:focus { border-color: var(--pink-main); box-shadow: 0 0 0 3px var(--pink-glow); }
+  .form-textarea { resize: vertical; min-height: 72px; line-height: 1.7; }
+  .form-select {
+    cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23C46B85'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; padding-right: 30px;
+  }
+
+  /* ===== Buttons ===== */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 11px 24px; border-radius: var(--radius-pill);
+    font-size: 13px; font-weight: 500; cursor: pointer; border: none;
+    transition: all 0.22s ease; font-family: inherit;
+  }
+  .btn.sm { padding: 7px 16px; font-size: 12px; border-radius: 16px; }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--pink-main), var(--pink-deep));
+    color: #fff; box-shadow: 0 4px 14px rgba(240,160,184,0.35);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(240,160,184,0.45); }
+  .btn-secondary { background: #fff; color: var(--rose-text); border: 1.5px solid var(--border-med); }
+  .btn-secondary:hover { border-color: var(--pink-main); color: var(--rose-dark); }
+  .btn-group { display: flex; gap: 10px; margin-top: 16px; }
+
+  /* ===== Tabs ===== */
+  .tab-bar { display: flex; gap: 0; margin-bottom: 16px; border-bottom: 1.5px solid var(--border-light); }
+  .tab-btn { padding: 10px 18px; font-size: 13px; color: var(--text-secondary); cursor: pointer; border: none; border-bottom: 2.5px solid transparent; background: none; transition: all 0.2s; font-family: inherit; }
+  .tab-btn:hover { color: var(--rose-text); }
+  .tab-btn.active { color: var(--rose-dark); border-bottom-color: var(--pink-main); font-weight: 600; }
+  .tab-content { display: none; }
+  .tab-content.active { display: block; animation: fadeUp 0.25s ease; }
+
+  /* Output Grid */
+  .output-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 8px; }
+  .output-card { border: 1.5px solid var(--border-light); border-radius: 14px; padding: 16px 14px; text-align: center; cursor: pointer; transition: all 0.2s; background: #fff; user-select: none; }
+  .output-card:hover { border-color: var(--pink-main); transform: translateY(-2px); box-shadow: var(--shadow-sm); }
+  .output-card.selected { border-color: var(--pink-main); background: var(--pink-pale); }
+  .output-card .oc-icon { width: 40px; height: 40px; border-radius: 12px; margin: 0 auto 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; background: var(--pink-pale); }
+  .output-card .oc-title { font-size: 13px; font-weight: 600; }
+  .output-card .oc-desc { font-size: 11px; color: var(--text-muted); line-height: 1.5; margin-top: 3px; }
+
+  /* Result Panel */
+  .result-panel { margin-top: 16px; border: 1px solid var(--border-light); border-radius: var(--radius-card); overflow: hidden; display: none; }
+  .result-panel.show { display: block; animation: fadeUp 0.3s ease; }
+  .rp-header { display: flex; align-items: center; justify-content: space-between; padding: 12px 20px; background: var(--pink-soft); border-bottom: 1px solid var(--border-light); }
+  .rp-title { font-size: 14px; font-weight: 600; color: var(--rose-dark); }
+  .rp-body { padding: 18px; max-height: 400px; overflow-y: auto; }
+  .rp-body pre { background: var(--pink-pale); padding: 16px; border-radius: 12px; font-size: 12px; line-height: 1.8; white-space: pre-wrap; font-family: "PingFang SC","Microsoft YaHei",monospace; color: var(--text-primary); }
+
+  /* Upload Zone */
+  .upload-zone { border: 2px dashed var(--border-med); border-radius: var(--radius-card); padding: 34px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--pink-pale); margin-bottom: 14px; }
+  .upload-zone:hover { border-color: var(--pink-main); background: #FFF; }
+  .upload-zone .uz-icon { font-size: 32px; margin-bottom: 8px; }
+  .upload-zone p { font-size: 13px; color: var(--text-muted); }
+  .upload-zone .uz-hint { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+  /* Stats Grid */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+  .stat-box { background: #fff; border-radius: 14px; padding: 14px; border: 1px solid var(--border-light); }
+  .stat-box .sb-label { font-size: 11px; color: var(--text-muted); margin-bottom: 5px; }
+  .stat-box .sb-value { font-size: 22px; font-weight: 700; color: var(--rose-dark); }
+  .stat-box .sb-trend { font-size: 11px; margin-top: 3px; }
+  .trend-up { color: #E07A95; } .trend-down { color: #7CB88E; }
+
+  /* Error Table */
+  .error-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .error-table th { text-align: left; padding: 9px 11px; background: var(--pink-soft); color: var(--rose-text); font-weight: 500; border-bottom: 1px solid var(--border-light); }
+  .error-table td { padding: 9px 11px; border-bottom: 1px solid var(--border-light); }
+  .error-tag { display: inline-block; padding: 2px 8px; border-radius: 8px; font-size: 11px; font-weight: 500; }
+  .tag-high { background: rgba(232,122,160,0.14); color: #C46B85; }
+  .tag-mid { background: rgba(230,180,130,0.18); color: #B08848; }
+  .tag-low { background: rgba(140,184,142,0.16); color: #5A9A68; }
+
+  /* Student Cards */
+  .student-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 12px; }
+  .student-card { background: #fff; border: 1px solid var(--border-light); border-radius: 14px; padding: 14px; transition: all 0.2s; }
+  .student-card:hover { border-color: var(--pink-main); box-shadow: var(--shadow-md); }
+  .sc-header { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .sc-avatar { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 600; color: #fff; }
+  .sc-name { font-size: 14px; font-weight: 600; }
+  .sc-id { font-size: 11px; color: var(--text-muted); }
+  .sc-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+  .sc-tag { font-size: 10px; padding: 2px 8px; border-radius: 8px; background: var(--pink-pale); color: var(--rose-text); }
+  .sc-record { font-size: 12px; color: var(--text-secondary); line-height: 1.8; }
+  .sc-record-item { display: flex; gap: 6px; }
+  .sc-record-dot { color: var(--pink-main); flex-shrink: 0; }
+
+  .record-input-bar { display: flex; gap: 10px; margin-bottom: 14px; }
+  .record-input-bar input { flex: 1; }
+  .quick-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+  .qa-btn { padding: 7px 14px; border-radius: 14px; font-size: 12px; background: #fff; border: 1.5px solid var(--border-light); cursor: pointer; color: var(--text-secondary); transition: all 0.18s; }
+  .qa-btn:hover { border-color: var(--pink-main); color: var(--rose-dark); }
+
+  /* Tasks */
+  .task-list { display: flex; flex-direction: column; gap: 10px; }
+  .task-item { display: flex; align-items: center; gap: 14px; padding: 13px 16px; background: #fff; border: 1px solid var(--border-light); border-radius: 14px; transition: all 0.2s; }
+  .task-item:hover { border-color: var(--pink-main); }
+  .ti-checkbox { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border-med); cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.2s; font-size: 12px; color: #fff; }
+  .ti-checkbox.checked { background: linear-gradient(135deg, var(--pink-main), var(--pink-deep)); border-color: transparent; }
+  .ti-info { flex: 1; }
+  .ti-title { font-size: 13px; font-weight: 500; }
+  .ti-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+  .ti-time { font-size: 11px; padding: 4px 10px; border-radius: 10px; background: var(--pink-pale); color: var(--rose-text); white-space: nowrap; }
+  .ti-toggle { width: 38px; height: 21px; border-radius: 11px; background: var(--border-med); position: relative; cursor: pointer; transition: all 0.2s; }
+  .ti-toggle.on { background: linear-gradient(135deg, var(--pink-main), var(--pink-deep)); }
+  .ti-toggle::after { content: ''; position: absolute; top: 2px; left: 2px; width: 17px; height: 17px; border-radius: 50%; background: #fff; transition: all 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.12); }
+  .ti-toggle.on::after { left: 19px; }
+  .add-task-row { display: flex; gap: 10px; margin-top: 12px; }
+  .add-task-row input { flex: 1; }
+
+  /* Meow Grid */
+  .meow-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .meow-card { background: #fff; border: 1px solid var(--border-light); border-radius: 16px; padding: 16px; box-shadow: var(--shadow-sm); transition: all 0.2s; }
+  .meow-card:hover { box-shadow: var(--shadow-md); }
+  .mc-head { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: var(--rose-dark); margin-bottom: 12px; }
+  .mc-badge { margin-left: auto; font-size: 11px; font-weight: 500; color: var(--rose-dark); background: var(--pink-pale); padding: 2px 10px; border-radius: 10px; }
+  .mc-row { display: flex; gap: 8px; align-items: center; }
+  .mood-selector { display: flex; gap: 8px; margin-bottom: 10px; }
+  .mood-selector button { font-size: 22px; width: 42px; height: 42px; border-radius: 12px; border: 1.5px solid var(--border-light); background: #fff; cursor: pointer; transition: all 0.18s; }
+  .mood-selector button:hover { transform: scale(1.1); }
+  .mood-selector button.sel { border-color: var(--pink-main); background: var(--pink-pale); transform: scale(1.08); }
+  .chip-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chip { font-size: 12px; padding: 7px 14px; border-radius: 14px; background: var(--pink-pale); border: 1.5px solid transparent; cursor: pointer; color: var(--text-secondary); transition: all 0.18s; user-select: none; }
+  .chip:hover { color: var(--rose-text); }
+  .chip.sel { background: var(--pink-soft); border-color: var(--pink-main); color: var(--rose-dark); font-weight: 500; }
+  .water-cups { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cup { width: 22px; height: 26px; border-radius: 4px 4px 8px 8px; border: 1.5px solid var(--pink-soft); background: #fff; transition: all 0.2s; }
+  .cup.filled { background: linear-gradient(180deg, var(--pink-main), var(--pink-deep)); border-color: transparent; }
+  .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+  .switch input { opacity: 0; width: 0; height: 0; }
+  .slider { position: absolute; cursor: pointer; inset: 0; background: var(--border-med); border-radius: 24px; transition: 0.2s; }
+  .slider::before { content: ''; position: absolute; height: 18px; width: 18px; left: 3px; bottom: 3px; background: #fff; border-radius: 50%; transition: 0.2s; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+  .switch input:checked + .slider { background: linear-gradient(135deg, var(--pink-main), var(--pink-deep)); }
+  .switch input:checked + .slider::before { transform: translateX(20px); }
+  .save-summary { margin-top: 14px; padding: 16px; background: var(--pink-pale); border-radius: 14px; font-size: 13px; line-height: 2; }
+  .sync-bar { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .sync-bar .btn { flex: 1 1 auto; }
+  .mc-sub { font-size: 12px; color: var(--text-secondary); margin-top: 8px; line-height: 1.7; }
+
+  /* ========== HOMEPAGE STYLES ========== */
+  .home-date { font-size: 14px; color: var(--rose-text); font-weight: 500; letter-spacing: 1px; }
+  .home-clock {
+    font-size: 52px; font-weight: 300; color: var(--rose-dark);
+    font-family: 'SF Pro Display', -apple-system, sans-serif;
+    letter-spacing: 2px; line-height: 1.1;
+    text-shadow: 0 2px 12px rgba(196,107,133,0.12);
+  }
+  .home-clock .clock-colon { animation: blink 1s step-end infinite; opacity: 1; }
+  @keyframes blink { 50% { opacity: 0.3; } }
+
+  /* 元气电波 Card */
+  .energy-card {
+    background: linear-gradient(135deg, #FFE4EC 0%, #FFD6E2 50%, #FFECF1 100%);
+    border-radius: var(--radius-card);
+    padding: 20px 24px;
+    margin: 20px 0;
+    border: 1.5px solid rgba(240,160,184,0.2);
+    position: relative; overflow: hidden;
+  }
+  .energy-card::before {
+    content: ''; position: absolute; top: -20px; right: -20px;
+    width: 80px; height: 80px; border-radius: 50%;
+    background: radial-gradient(circle, rgba(255,182,202,0.3) 0%, transparent 70%);
+  }
+  .energy-label { font-size: 13px; font-weight: 600; color: var(--rose-dark); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .energy-quote { font-size: 14px; line-height: 1.9; color: var(--text-primary); }
+  .energy-source { font-size: 11.5px; color: var(--text-muted); margin-top: 8px; text-align: right; font-style: italic; }
+
+  /* Hello Kitty Area */
+  .kitty-section {
+    text-align: center; padding: 28px 0 16px;
+    position: relative;
+  }
+  .kitty-container {
+    width: 240px; height: 220px; margin: 0 auto 16px;
+    position: relative;
+  }
+  .kitty-welcome { font-size: 22px; font-weight: 600; color: var(--rose-dark); margin-bottom: 6px; }
+  .kitty-subtitle { font-size: 13px; color: var(--text-secondary); }
+
+  /* Floating decorations */
+  .float-heart, .float-star, .float-butterfly {
+    position: absolute; animation: float 3s ease-in-out infinite;
+  }
+  .float-heart { font-size: 18px; color: #F0A0B8; }
+  .float-star { font-size: 16px; color: #F5C97A; }
+  .float-butterfly { font-size: 20px; }
+  @keyframes float {
+    0%, 100% { transform: translateY(0) rotate(0deg); }
+    50% { transform: translateY(-8px) rotate(5deg); }
+  }
+  .fh1 { top: 10px; left: 10px; animation-delay: 0s; }
+  .fh2 { bottom: 30px; right: 0; animation-delay: 0.5s; }
+  .fs1 { top: 20px; right: 20px; animation-delay: 0.3s; }
+  .fs2 { bottom: 40px; left: 5px; animation-delay: 0.8s; }
+  .fb1 { top: 60px; right: -5px; animation-delay: 0.2s; }
+  .fb2 { bottom: 10px; right: 30px; animation-delay: 0.7s; }
+
+  /* Dashboard Cards (4-grid) */
+  .dash-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin-top: 20px; }
+  .dash-card {
+    background: #fff; border-radius: var(--radius-card);
+    padding: 22px; text-align: center;
+    border: 1px solid var(--border-light);
+    box-shadow: var(--shadow-sm);
+    transition: all 0.25s ease;
+    cursor: default;
+    position: relative; overflow: hidden;
+  }
+  .dash-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+  .dash-card::after {
+    content: ''; position: absolute; bottom: 0; left: 0; right: 0;
+    height: 3px; background: linear-gradient(90deg, var(--pink-main), var(--pink-deep));
+    opacity: 0; transition: opacity 0.2s;
+  }
+  .dash-card:hover::after { opacity: 1; }
+  .dash-icon { font-size: 32px; margin-bottom: 10px; display: block; }
+  .dash-value { font-size: 32px; font-weight: 700; color: var(--rose-dark); line-height: 1.2; }
+  .dash-label { font-size: 12.5px; color: var(--text-muted); margin-top: 6px; font-weight: 500; }
+  .dash-action {
+    margin-top: 10px; font-size: 11px; color: var(--pink-main);
+    cursor: pointer; font-weight: 500; transition: color 0.2s;
+  }
+  .dash-action:hover { color: var(--rose-dark); }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .sidebar { width: 72px; padding: 20px 8px; }
+    .logo-name, .logo-sub, .nav-item span, .nav-badge, .sidebar-footer { display: none; }
+    .nav-item { justify-content: center; padding: 12px; }
+    .logo-avatar { width: 42px; height: 42px; }
+    .form-row { grid-template-columns: 1fr; }
+    .output-grid, .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .meow-grid { grid-template-columns: repeat(2, 1fr); }
+    .home-clock { font-size: 38px; }
+    .kitty-container { width: 180px; height: 165px; }
+  }
+  @media (max-width: 640px) {
+    .main-content { padding: 20px 16px; }
+    .dash-grid, .output-grid, .stats-grid, .meow-grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== SVG Symbols ========== -->
+<svg style="display:none">
+  <!-- 蝴蝶结 Logo -->
+  <symbol id="bowSVG" viewBox="0 0 100 80">
+    <defs>
+      <linearGradient id="bowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FFB6CC"/>
+        <stop offset="50%" stop-color="#F0A0B8"/>
+        <stop offset="100%" stop-color="#E07A95"/>
+      </linearGradient>
+      <linearGradient id="bowGradDark" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#E07A95"/>
+        <stop offset="100%" stop-color="#C46B85"/>
+      </linearGradient>
+      <filter id="bowShadow" x="-20%" y="-20%" width="140%" height="140%">
+        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="rgba(196,107,133,0.3)"/>
+      </filter>
+    </defs>
+    <!-- Left loop -->
+    <ellipse cx="28" cy="32" rx="26" ry="20" fill="url(#bowGrad)" transform="rotate(-20 28 32)" filter="url(#bowShadow)"/>
+    <!-- Right loop -->
+    <ellipse cx="72" cy="32" rx="26" ry="20" fill="url(#bowGrad)" transform="rotate(20 72 32)" filter="url(#bowShadow)"/>
+    <!-- Center knot -->
+    <circle cx="50" cy="38" r="10" fill="url(#bowGradDark)" filter="url(#bowShadow)"/>
+    <!-- Ribbon tails -->
+    <path d="M44 46 Q38 62 33 74 Q43 70 50 56" fill="url(#bowGrad)" opacity="0.85"/>
+    <path d="M56 46 Q62 62 67 74 Q57 70 50 56" fill="url(#bowGrad)" opacity="0.85"/>
+    <!-- Highlight -->
+    <ellipse cx="22" cy="27" rx="8" ry="5" fill="rgba(255,255,255,0.35)" transform="rotate(-20 22 27)"/>
+    <ellipse cx="78" cy="27" rx="8" ry="5" fill="rgba(255,255,255,0.35)" transform="rotate(20 78 27)"/>
+  </symbol>
+
+  <!-- Hello Kitty -->
+  <symbol id="kittySVG" viewBox="0 0 260 230">
+    <defs>
+      <radialGradient id="kittyFace" cx="45%" cy="40%" r="55%">
+        <stop offset="0%" stop-color="#FFFFFF"/>
+        <stop offset="75%" stop-color="#FFF5F7"/>
+        <stop offset="100%" stop-color="#FFE8ED"/>
+      </radialGradient>
+      <linearGradient id="kittyBow" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#FF8FA8"/>
+        <stop offset="100%" stop-color="#E06B86"/>
+      </linearGradient>
+      <filter id="kittySoft" x="-10%" y="-10%" width="120%" height="120%">
+        <feGaussianBlur in="SourceAlpha" stdDeviation="1.5" result="blur"/>
+        <feOffset dx="0" dy="2" result="offsetBlur"/>
+        <feMerge><feMergeNode in="offsetBlur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+      <filter id="kittyGlow" x="-20%" y="-20%" width="140%" height="140%">
+        <feGaussianBlur stdDeviation="3" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- Ears -->
+    <ellipse cx="72" cy="58" rx="28" ry="36" fill="url(#kittyFace)" stroke="#F0D0DA" stroke-width="1.5" filter="url(#kittySoft)"/>
+    <ellipse cx="188" cy="58" rx="28" ry="36" fill="url(#kittyFace)" stroke="#F0D0DA" stroke-width="1.5" filter="url(#kittySoft)"/>
+
+    <!-- Inner ears (pink) -->
+    <ellipse cx="72" cy="62" rx="16" ry="22" fill="#FFD6E2" opacity="0.7"/>
+    <ellipse cx="188" cy="62" rx="16" ry="22" fill="#FFD6E2" opacity="0.7"/>
+
+    <!-- Face -->
+    <ellipse cx="130" cy="138" rx="92" ry="82" fill="url(#kittyFace)" stroke="#F0D0DA" stroke-width="1.5" filter="url(#kittySoft)"/>
+
+    <!-- Bow on LEFT ear -->
+    <g transform="translate(54, 38)">
+      <ellipse cx="-14" cy="4" rx="16" ry="12" fill="url(#kittyBow)" transform="rotate(-25 -14 4)" filter="url(#kittySoft)"/>
+      <ellipse cx="14" cy="4" rx="16" ry="12" fill="url(#kittyBow)" transform="rotate(25 14 4)" filter="url(#kittySoft)"/>
+      <circle cx="0" cy="6" r="6" fill="#D65A76" filter="url(#kittySoft)"/>
+      <ellipse cx="-18" cy="0" rx="5" ry="3" fill="rgba(255,255,255,0.35)" transform="rotate(-25 -18 0)"/>
+    </g>
+
+    <!-- Eyes -->
+    <ellipse cx="98" cy="128" rx="5.5" ry="7.5" fill="#5A4552"/>
+    <ellipse cx="162" cy="128" rx="5.5" ry="7.5" fill="#5A4552"/>
+    <!-- Eye highlights -->
+    <circle cx="100" cy="125.5" r="2" fill="#fff"/>
+    <circle cx="164" cy="125.5" r="2" fill="#fff"/>
+
+    <!-- Nose -->
+    <path d="M126 144 L134 144 L130 151 Z" fill="#F5A0B0"/>
+
+    <!-- Mouth -->
+    <path d="M130 152 Q118 162 108 155 M130 152 Q142 162 152 155" stroke="#D6A0AB" stroke-width="1.8" fill="none" stroke-linecap="round"/>
+
+    <!-- Whiskers - Left -->
+    <line x1="64" y1="134" x2="96" y2="140" stroke="#E8C4CE" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="62" y1="146" x2="94" y2="148" stroke="#E8C4CE" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="66" y1="158" x2="96" y2="156" stroke="#E8C4CE" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- Whiskers - Right -->
+    <line x1="196" y1="134" x2="164" y2="140" stroke="#E8C4CE" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="198" y1="146" x2="166" y2="148" stroke="#E8C4CE" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="194" y1="158" x2="164" y2="156" stroke="#E8C4CE" stroke-width="1.5" stroke-linecap="round"/>
+
+    <!-- Blush -->
+    <ellipse cx="84" cy="150" rx="12" ry="7" fill="#FFD6E2" opacity="0.5" filter="url(#kittyGlow)"/>
+    <ellipse cx="176" cy="150" rx="12" ry="7" fill="#FFD6E2" opacity="0.5" filter="url(#kittyGlow)"/>
+  </symbol>
+</svg>
+
+<!-- ========== Sidebar ========== -->
+<aside class="sidebar">
+  <div class="logo-area">
+    <div class="logo-avatar"><img src="sidebar-avatar.jpg" alt="Lydia's Avatar"></div>
+    <div class="logo-name">每日喵喵</div>
+    <div class="logo-sub">Lydia's Desk</div>
+  </div>
+  <nav class="nav-menu">
+    <div class="nav-item active" data-module="home" onclick="switchModule('home', this)">
+      <div class="nav-icon">🏠</div><span>首页</span>
+    </div>
+    <div class="nav-item" data-module="prepare" onclick="switchModule('prepare', this)">
+      <div class="nav-icon">📋</div><span>教师备课</span>
+    </div>
+    <div class="nav-item" data-module="grading" onclick="switchModule('grading', this)">
+      <div class="nav-icon">✍🏻</div><span>作业批改</span>
+    </div>
+    <div class="nav-item" data-module="records" onclick="switchModule('records', this)">
+      <div class="nav-icon">🧠</div><span>学情记录</span>
+    </div>
+    <div class="nav-item" data-module="schedule" onclick="switchModule('schedule', this)">
+      <div class="nav-icon">⏰</div><span>定时任务</span>
+      <span class="nav-badge">3</span>
+    </div>
+    <div class="nav-item" data-module="meow" onclick="switchModule('meow', this)">
+      <div class="nav-icon">🐱</div><span>每日喵喵</span>
+    </div>
+  </nav>
+  <div class="sidebar-footer"><span>c.010<br>miao~</span></div>
+</aside>
+
+<!-- ========== Main Content ========== -->
+<main class="main-content">
+
+  <!-- ==================== 首页 HOME ==================== -->
+  <section id="module-home" class="module-page active">
+
+    <!-- Date & Clock -->
+    <div style="margin-bottom:4px;">
+      <div class="home-date" id="homeDate"></div>
+      <div class="home-clock" id="homeClock"><span id="clockH">00</span><span class="clock-colon">:</span><span id="clockM">00</span><span class="clock-colon">:</span><span id="clockS">00</span></div>
+    </div>
+
+    <!-- 今日元气电波 -->
+    <div class="energy-card">
+      <div class="energy-label">📡 今日元气电波</div>
+      <div class="energy-quote" id="energyQuote"></div>
+      <div class="energy-source" id="energySource"></div>
+    </div>
+
+    <!-- Hello Kitty Welcome -->
+    <div class="kitty-section">
+      <div class="kitty-container">
+        <img id="homeKittyImg" style="width:100%;height:100%;object-fit:contain;border-radius:16px;" alt="苗苗的猫猫">
+        <span class="float-heart fh1">💕</span>
+        <span class="float-heart fh2">💗</span>
+        <span class="float-star fs1">✨</span>
+        <span class="float-star fs2">⭐</span>
+        <span class="float-butterfly fb1">🎀</span>
+        <span class="float-butterfly fb2">🦋</span>
+      </div>
+      <div class="kitty-welcome" id="kittyWelcome"></div>
+      <div class="kitty-subtitle" id="kittySubtitle"></div>
+    </div>
+
+    <!-- Dashboard Cards -->
+    <div class="dash-grid">
+      <div class="dash-card" onclick="switchModule('prepare', document.querySelector('[data-module=prepare]'))">
+        <span class="dash-icon">📝</span>
+        <div class="dash-value" id="dashPrep">3</div>
+        <div class="dash-label">今日备课任务</div>
+        <div class="dash-action">去备课 →</div>
+      </div>
+      <div class="dash-card" onclick="switchModule('grading', document.querySelector('[data-module=grading]'))">
+        <span class="dash-icon">✍🏻</span>
+        <div class="dash-value" id="dashGrade">28</div>
+        <div class="dash-label">待批改作业</div>
+        <div class="dash-action">去批改 →</div>
+      </div>
+      <div class="dash-card" onclick="switchModule('records', document.querySelector('[data-module=records]'))">
+        <span class="dash-icon">🧠</span>
+        <div class="dash-value" id="dashRecord">5</div>
+        <div class="dash-label">今日学情记录</div>
+        <div class="dash-action">去记录 →</div>
+      </div>
+      <div class="dash-card" onclick="switchModule('meow', document.querySelector('[data-module=meow]'))">
+        <span class="dash-icon">🐱</span>
+        <div class="dash-value" id="dashMeow">4<span style="font-size:18px;color:var(--text-muted)">/12</span></div>
+        <div class="dash-label">喵喵打卡完成度</div>
+        <div class="dash-action">去打卡 →</div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ==================== 教师备课 ==================== -->
+  <section id="module-prepare" class="module-page">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div><h2 style="font-size:20px;font-weight:600;color:var(--rose-dark)">📋 教师备课</h2><p style="font-size:13px;color:var(--text-muted);margin-top:3px;">一键生成完整教案 + PPT大纲 + 练习题 + 导学案</p></div>
+      <div style="width:52px;height:52px;border-radius:50%;background:var(--pink-pale);padding:4px;overflow:hidden;"><img src="avatars/avatar00.jpg" style="width:100%;height:100%;object-fit:contain;" alt="Lydia"></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-icon">📝</span><span class="card-title">输入课题信息</span></div>
+      <div class="form-row">
+        <div class="form-group"><label class="form-label">年级</label><select class="form-select" id="grade"><option>七年级上册</option><option>七年级下册</option><option>八年级上册</option><option>八年级下册</option><option>九年级上册</option><option>九年级下册</option></select></div>
+        <div class="form-group"><label class="form-label">单元 / 课文</label><select class="form-select" id="unit"><option>第一单元</option><option>第二单元</option><option>第三单元</option><option>第四单元</option><option>第五单元</option><option>第六单元</option></select></div>
+        <div class="form-group"><label class="form-label">课文标题</label><input type="text" class="form-input" id="lessonTitle" placeholder="如：春、济南的冬天..."></div>
+      </div>
+      <div class="form-group"><label class="form-label">补充要求（选填）</label><textarea class="form-textarea" id="extraReq" placeholder="如：侧重朗读指导、需要生字卡片、融合课外阅读素材..."></textarea></div>
+    </div>
+    <div class="card">
+      <div class="card-header"><span class="card-icon">✨</span><span class="card-title">选择生成内容</span></div>
+      <div class="output-grid">
+        <div class="output-card selected" data-type="doc" onclick="toggleOutput(this)"><div class="oc-icon">📄</div><div class="oc-title">教案文档</div><div class="oc-desc">含教学目标、重难点、流程、板书设计</div></div>
+        <div class="output-card selected" data-type="ppt" onclick="toggleOutput(this)"><div class="oc-icon">📊</div><div class="oc-title">PPT课件</div><div class="oc-desc">含导入、讲解、互动、练习幻灯片</div></div>
+        <div class="output-card" data-type="exercise" onclick="toggleOutput(this)"><div class="oc-icon">📋</div><div class="oc-title">练习题</div><div class="oc-desc">字词、阅读理解、写作练习</div></div>
+        <div class="output-card" data-type="guide" onclick="toggleOutput(this)"><div class="oc-icon">✅</div><div class="oc-title">导学案</div><div class="oc-desc">课前预习+课堂探究+课后拓展</div></div>
+      </div>
+      <div class="btn-group"><button class="btn btn-primary" onclick="generateLesson()">🚀 一键生成</button><button class="btn btn-secondary" onclick="clearForm()">🗑️ 清空</button></div>
+    </div>
+    <div class="result-panel" id="resultPanel"><div class="rp-header"><span class="rp-title">📄 生成结果预览</span><button class="btn btn-secondary sm" onclick="copyResult()">📋 复制</button></div><div class="rp-body"><pre id="resultText"></pre></div></div>
+  </section>
+
+  <!-- ==================== 作业批改 ==================== -->
+  <section id="module-grading" class="module-page">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div><h2 style="font-size:20px;font-weight:600;color:var(--rose-dark)">✍🏻 作业批改</h2><p style="font-size:13px;color:var(--text-muted);margin-top:3px;">智能批改与学情分析 · 早读 / 作业 / 提交 / 错题 全流程管理</p></div>
+      <div style="width:52px;height:52px;border-radius:50%;background:var(--pink-pale);padding:4px;overflow:hidden;"><img src="avatars/avatar00.jpg" style="width:100%;height:100%;object-fit:contain;" alt="Lydia"></div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab(this,'g-read')">🌅 早读任务</button>
+      <button class="tab-btn" onclick="switchTab(this,'g-homework')">📚 每日作业</button>
+      <button class="tab-btn" onclick="switchTab(this,'g-submit')">📥 作业提交</button>
+      <button class="tab-btn" onclick="switchTab(this,'g-upload')">📤 上传批改</button>
+      <button class="tab-btn" onclick="switchTab(this,'g-analysis')">📊 数据看板</button>
+      <button class="tab-btn" onclick="switchTab(this,'g-errors')">❌ 错题台账</button>
+    </div>
+
+    <!-- 早读任务 -->
+    <div id="g-read" class="tab-content active">
+      <div class="card">
+        <div class="card-header"><span class="card-icon">🌅</span><span class="card-title">今日早读安排</span><span style="margin-left:auto;font-size:12px;color:var(--text-muted)" id="readDoneTxt"></span></div>
+        <div class="task-list" id="readList"></div>
+        <div class="add-task-row"><input type="text" class="form-input" id="newRead" placeholder="添加早读任务（如：朗读《春》全文、背诵《观沧海》）"><button class="btn btn-primary" onclick="addRead()">＋ 添加</button></div>
+      </div>
+    </div>
+
+    <!-- 每日作业 -->
+    <div id="g-homework" class="tab-content">
+      <div class="card">
+        <div class="card-header"><span class="card-icon">📚</span><span class="card-title">每日作业布置</span></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">科目</label><select class="form-select" id="hwSubj"><option>语文</option><option>数学</option><option>英语</option><option>其他</option></select></div>
+          <div class="form-group"><label class="form-label">作业内容</label><input type="text" class="form-input" id="hwContent" placeholder="如：背诵第5课生字词"></div>
+          <div class="form-group"><label class="form-label">截止日期</label><input type="date" class="form-input" id="hwDue"></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="addHomework()">＋ 发布作业</button></div>
+        <div class="task-list" id="homeworkList" style="margin-top:16px"></div>
+      </div>
+    </div>
+
+    <!-- 作业提交 -->
+    <div id="g-submit" class="tab-content">
+      <div class="card">
+        <div class="card-header"><span class="card-icon">📥</span><span class="card-title">作业提交情况</span><span style="margin-left:auto;font-size:12px;color:var(--text-muted)" id="submitSummary"></span></div>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="sb-label">已提交</div><div class="sb-value" style="color:#7CB88E">45</div><div class="sb-trend trend-up">↑ 准时</div></div>
+          <div class="stat-box"><div class="sb-label">未提交</div><div class="sb-value" style="color:#E07A95">2</div><div class="sb-trend trend-down">需跟进</div></div>
+          <div class="stat-box"><div class="sb-label">提交率</div><div class="sb-value">95.6%</div><div class="sb-trend">较昨日 +1.2%</div></div>
+          <div class="stat-box"><div class="sb-label">迟交</div><div class="sb-value" style="font-size:18px">3</div><div class="sb-trend">已提醒</div></div>
+        </div>
+        <div class="task-list" id="submitList" style="margin-top:6px"></div>
+      </div>
+    </div>
+
+    <!-- 上传批改 -->
+    <div id="g-upload" class="tab-content">
+      <div class="card">
+        <div class="upload-zone" id="uploadZone" onclick="triggerUpload()"><div class="uz-icon">📸</div><p>点击或拖拽上传练习题照片 / 成绩单文件</p><p class="uz-hint">支持 JPG / PNG / PDF / Excel，单次最多 20 张</p></div>
+        <input type="file" id="fileInput" multiple accept="image/*,.pdf,.xlsx,.xls" style="display:none" onchange="handleFiles(this.files)">
+        <div class="stats-grid">
+          <div class="stat-box"><div class="sb-label">已提交人数</div><div class="sb-value">45</div><div class="sb-trend trend-up">↑ 较上周 +3人</div></div>
+          <div class="stat-box"><div class="sb-label">班级均分</div><div class="sb-value">82.6</div><div class="sb-trend trend-up">↑ 较上次 +2.1</div></div>
+          <div class="stat-box"><div class="sb-label">最高 / 最低</div><div class="sb-value" style="font-size:18px"><span style="color:#7CB88E">98</span> / <span style="color:#E07A95">54</span></div></div>
+          <div class="stat-box"><div class="sb-label">薄弱知识点</div><div class="sb-value" style="color:#E07A95;font-size:15px">文言虚词</div><div class="sb-trend tag-high">错误率 34%</div></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="startGrading()">🔍 开始智能批改</button><button class="btn btn-secondary">📥 导入成绩单模板</button></div>
+      </div>
+    </div>
+
+    <!-- 数据看板 -->
+    <div id="g-analysis" class="tab-content">
+      <div class="card"><div class="card-header"><span class="card-icon">📊</span><span class="card-title">班级学情数据看板</span></div><div class="stats-grid">
+        <div class="stat-box"><div class="sb-label">优秀率（≥90）</div><div class="sb-value" style="color:#7CB88E">28.9%</div><div class="sb-trend trend-up">↑ 13人</div></div>
+        <div class="stat-box"><div class="sb-label">良好率（80-89）</div><div class="sb-value" style="color:#6B9AC4">37.8%</div><div class="sb-trend">17人</div></div>
+        <div class="stat-box"><div class="sb-label">待提升（&lt;60）</div><div class="sb-value" style="color:#E07A95">8.9%</div><div class="sb-trend trend-down">↓ 4人需关注</div></div>
+        <div class="stat-box"><div class="sb-label">作业完成率</div><div class="sb-value" style="color:#D4A84B">95.6%</div><div class="sb-trend">2人未交</div></div>
+      </div></div>
+    </div>
+
+    <!-- 错题台账 -->
+    <div id="g-errors" class="tab-content">
+      <div class="card"><div class="card-header"><span class="card-icon">❌</span><span class="card-title">高频错题台账 TOP 5</span></div><table class="error-table"><thead><tr><th>排名</th><th>知识点</th><th>错误人数</th><th>错误率</th><th>难度</th></tr></thead><tbody>
+        <tr><td>1</td><td>文言虚词"之""其"辨析</td><td>15人</td><td>33.3%</td><td><span class="error-tag tag-high">高</span></td></tr>
+        <tr><td>2</td><td>环境描写的作用分析</td><td>12人</td><td>26.7%</td><td><span class="error-tag tag-mid">中</span></td></tr>
+        <tr><td>3</td><td>修辞手法判断与效果</td><td>10人</td><td>22.2%</td><td><span class="error-tag tag-mid">中</span></td></tr>
+        <tr><td>4</td><td>古诗文默写填空</td><td>8人</td><td>17.8%</td><td><span class="error-tag tag-low">低</span></td></tr>
+        <tr><td>5</td><td>人物形象概括</td><td>7人</td><td>15.6%</td><td><span class="error-tag tag-low">低</span></td></tr>
+      </tbody></table>
+      <div style="margin-top:14px"><button class="btn btn-secondary sm" onclick="alert('📒 已将该错题台账同步至「学情记录 · 学情台账」与周报')">🔗 同步至学情台账</button></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 学情记录 ==================== -->
+  <section id="module-records" class="module-page">
+    <div class="page-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
+      <div><h2 style="font-size:20px;font-weight:600;color:var(--rose-dark)">🧠 学情记录</h2><p style="font-size:13px;color:var(--text-muted);margin-top:3px;">班级管理的「数字记忆」· 看板 / 档案 / 考勤 / 台账 / 奖惩 / 心理 / 沟通</p></div>
+      <div style="width:52px;height:52px;border-radius:50%;background:var(--pink-pale);padding:4px;overflow:hidden;"><img src="avatars/avatar00.jpg" style="width:100%;height:100%;object-fit:contain;" alt="Lydia"></div>
+    </div>
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="switchTab(this,'r-dash')">📊 数据看板</button>
+      <button class="tab-btn" onclick="switchTab(this,'r-students')">👥 学生档案</button>
+      <button class="tab-btn" onclick="switchTab(this,'r-attend')">📅 每日考勤</button>
+      <button class="tab-btn" onclick="switchTab(this,'r-ledger')">📒 学情台账</button>
+      <button class="tab-btn" onclick="switchTab(this,'r-reward')">🏅 奖惩记录</button>
+      <button class="tab-btn" onclick="switchTab(this,'r-mental')">💗 心理健康</button>
+      <button class="tab-btn" onclick="switchTab(this,'r-comm')">💬 沟通记录</button>
+    </div>
+
+    <!-- 数据看板 -->
+    <div id="r-dash" class="tab-content active">
+      <div class="card"><div class="card-header"><span class="card-icon">📊</span><span class="card-title">七年级(2)班 · 学情总览</span><span style="margin-left:auto;font-size:12px;color:var(--text-muted)">2026-07-28</span></div>
+        <div class="stats-grid">
+          <div class="stat-box"><div class="sb-label">在校学生</div><div class="sb-value">45</div><div class="sb-trend">男生23 / 女生22</div></div>
+          <div class="stat-box"><div class="sb-label">今日出勤</div><div class="sb-value" style="color:#7CB88E">44</div><div class="sb-trend trend-up">出勤率 97.8%</div></div>
+          <div class="stat-box"><div class="sb-label">本周作业均分</div><div class="sb-value">82.6</div><div class="sb-trend trend-up">↑ 较上周 +2.1</div></div>
+          <div class="stat-box"><div class="sb-label">需重点关注</div><div class="sb-value" style="color:#E07A95">4</div><div class="sb-trend">待提升学生</div></div>
+        </div>
+        <div class="stats-grid" style="margin-top:12px">
+          <div class="stat-box"><div class="sb-label">本周表扬</div><div class="sb-value" style="color:#D4A84B">12<span style="font-size:14px"> 次</span></div><div class="sb-trend">奖励记录</div></div>
+          <div class="stat-box"><div class="sb-label">本周沟通</div><div class="sb-value" style="color:#6B9AC4">8<span style="font-size:14px"> 次</span></div><div class="sb-trend">家校 / 学生</div></div>
+          <div class="stat-box"><div class="sb-label">心理关注</div><div class="sb-value" style="color:#AE9FBE">3</div><div class="sb-trend">持续跟进</div></div>
+          <div class="stat-box"><div class="sb-label">错题累计</div><div class="sb-value">52</div><div class="sb-trend">待巩固</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 学生档案 -->
+    <div id="r-students" class="tab-content">
+      <div class="card"><div class="card-header"><span class="card-icon">👥</span><span class="card-title">七年级(2)班 · 学生信息库</span><span style="margin-left:auto;font-size:12px;color:var(--text-muted)">共 45 人</span></div><div class="student-grid" id="studentGrid"></div></div>
+      <div class="card"><div class="card-header"><span class="card-icon">📋</span><span class="card-title">期末评语与分析报告生成</span></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">选择学期</label><select class="form-select"><option>2025-2026 第一学期</option><option>2025-2026 第二学期</option></select></div>
+          <div class="form-group"><label class="form-label">评语风格</label><select class="form-select" id="reportStyle"><option>温暖鼓励型</option><option>客观中肯型</option><option>严格规范型</option></select></div>
+          <div class="form-group"><label class="form-label">输出格式</label><select class="form-select"><option>完整评语表（Excel）</option><option>个人评语卡片</option><option>数据分析报告</option></select></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="generateReports()">🎉 一键生成全班评语</button><button class="btn btn-secondary">📊 导出数据分析报告</button></div>
+      </div>
+    </div>
+
+    <!-- 每日考勤 -->
+    <div id="r-attend" class="tab-content">
+      <div class="card"><div class="card-header"><span class="card-icon">📅</span><span class="card-title">今日考勤（2026-07-28）</span><span style="margin-left:auto;font-size:12px" id="attendSummary"></span></div>
+        <table class="error-table"><thead><tr><th style="width:120px">学生</th><th style="width:120px">状态</th><th>备注</th></tr></thead><tbody id="attendBody"></tbody></table>
+      </div>
+    </div>
+
+    <!-- 学情台账 -->
+    <div id="r-ledger" class="tab-content">
+      <div class="card"><div class="card-header"><span class="card-icon">📒</span><span class="card-title">快速记录学生表现</span></div>
+        <div class="record-input-bar"><select class="form-select" id="recordStudent" style="flex:0 0 160px"><option value="">选择学生</option></select><input type="text" class="form-input" id="recordContent" placeholder="输入记录内容..."><button class="btn btn-primary" onclick="addRecord()">💾 记录</button></div>
+        <div class="quick-actions">
+          <button class="qa-btn" onclick="quickRecord('背诵优秀')">⭐ 背诵优秀</button>
+          <button class="qa-btn" onclick="quickRecord('作业优秀')">📝 作业优秀</button>
+          <button class="qa-btn" onclick="quickRecord('积极发言')">💬 积极发言</button>
+          <button class="qa-btn" onclick="quickRecord('书写进步')">✍️ 书写进步</button>
+          <button class="qa-btn" onclick="quickRecord('爱阅读')">📖 爱阅读</button>
+          <button class="qa-btn" onclick="quickRecord('需关注')">⚠️ 需关注</button>
+        </div>
+      </div>
+      <div class="card"><div class="card-header"><span class="card-icon">📜</span><span class="card-title">最近记录</span></div><div class="task-list" id="ledgerList"></div></div>
+    </div>
+
+    <!-- 奖惩记录 -->
+    <div id="r-reward" class="tab-content">
+      <div class="card"><div class="card-header"><span class="card-icon">🏅</span><span class="card-title">奖励 / 惩罚登记</span></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">学生</label><select class="form-select" id="rwStudent"><option value="">选择学生</option></select></div>
+          <div class="form-group"><label class="form-label">类型</label><select class="form-select" id="rwType"><option>🌟 奖励</option><option>⚠️ 惩罚</option></select></div>
+          <div class="form-group"><label class="form-label">事由</label><input type="text" class="form-input" id="rwReason" placeholder="如：默写全对、主动助人"></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="addReward()">＋ 登记</button></div>
+        <div class="task-list" id="rewardList" style="margin-top:14px"></div>
+      </div>
+    </div>
+
+    <!-- 心理健康 -->
+    <div id="r-mental" class="tab-content">
+      <div class="card"><div class="card-header"><span class="card-icon">💗</span><span class="card-title">学生心理状态记录</span></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">学生</label><select class="form-select" id="mtStudent"><option value="">选择学生</option></select></div>
+          <div class="form-group"><label class="form-label">今日状态</label><select class="form-select" id="mtMood"><option>😊 愉悦</option><option>😌 平静</option><option>😐 一般</option><option>😟 低落</option><option>😣 焦虑</option></select></div>
+          <div class="form-group"><label class="form-label">观察备注</label><input type="text" class="form-input" id="mtNote" placeholder="如：近期沉默寡言，需多关注"></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="addMental()">＋ 记录</button></div>
+        <div class="task-list" id="mentalList" style="margin-top:14px"></div>
+      </div>
+    </div>
+
+    <!-- 沟通记录 -->
+    <div id="r-comm" class="tab-content">
+      <div class="card"><div class="card-header"><span class="card-icon">💬</span><span class="card-title">家校 / 师生沟通记录</span></div>
+        <div class="form-row">
+          <div class="form-group"><label class="form-label">沟通对象</label><input type="text" class="form-input" id="cmWho" placeholder="如：张明轩家长 / 李思雨"></div>
+          <div class="form-group"><label class="form-label">方式</label><select class="form-select" id="cmWay"><option>微信</option><option>电话</option><option>面谈</option><option>家访</option></select></div>
+          <div class="form-group"><label class="form-label">沟通内容</label><input type="text" class="form-input" id="cmContent" placeholder="如：反馈近期课堂表现"></div>
+        </div>
+        <div class="btn-group"><button class="btn btn-primary" onclick="addComm()">＋ 记录</button></div>
+        <div class="task-list" id="commList" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 定时任务 ==================== -->
+  <section id="module-schedule" class="module-page">
+    <div class="page-header" style="margin-bottom:20px;">
+      <h2 style="font-size:20px;font-weight:600;color:var(--rose-dark)">⏰ 定时任务</h2>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:3px;">自动归档 · 周报生成 · 待办提醒</p>
+    </div>
+    <div class="card"><div class="card-header"><span class="card-icon">📋</span><span class="card-title">已设置的任务</span></div><div class="task-list" id="taskList"></div>
+      <div class="add-task-row"><input type="text" class="form-input" id="newTaskName" placeholder="添加新任务..."><input type="time" class="form-input" id="newTaskTime" style="flex:0 0 130px"><button class="btn btn-primary" onclick="addTask()">＋ 添加</button></div>
+    </div>
+    <div class="card"><div class="card-header"><span class="card-icon">📅</span><span class="card-title">快捷预设</span></div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button class="qa-btn" onclick="presetTask('每天 17:00 整理当天作业')" style="background:rgba(240,160,184,0.12);color:#C46B85">📝 每日整理作业</button>
+        <button class="qa-btn" onclick="presetTask('每周五 18:00 生成本周教学周报')" style="background:rgba(157,177,196,0.12);color:#6B9AC4">📊 每周生成周报</button>
+        <button class="qa-btn" onclick="presetTask('每周日 20:00 排列下周计划')" style="background:rgba(174,159,190,0.12);color:#897A9C">📅 每周日排计划</button>
+        <button class="qa-btn" onclick="presetTask('每月末 归档本月优秀作业集')" style="background:rgba(212,168,75,0.12);color:#B08848">🏆 月末归档优秀</button>
+        <button class="qa-btn" onclick="presetTask('每学期末 生成学生个性化评语')" style="background:rgba(224,122,149,0.12);color:#C46B85">🎓 期末生成评语</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 每日喵喵 ==================== -->
+  <section id="module-meow" class="module-page">
+    <div class="page-header" style="margin-bottom:20px;">
+      <h2 style="font-size:20px;font-weight:600;color:var(--rose-dark)">🐱 每日喵喵</h2>
+      <p style="font-size:13px;color:var(--text-muted);margin-top:3px;">个人日常健康管理 · 记录每一天的小确幸与好状态</p>
+    </div>
+    <div class="meow-grid">
+      <div class="meow-card"><div class="mc-head"><span>🌈</span> 心情记录</div><div class="mood-selector" id="moodSelector"><button data-mood="开心">😊</button><button data-mood="平静">😌</button><button data-mood="一般">😐</button><button data-mood="低落">😢</button><button data-mood="生气">😤</button></div><input class="form-input" id="moodNote" placeholder="今天为什么是这个心情呢？"></div>
+      <div class="meow-card"><div class="mc-head"><span>📝</span> 每日随笔</div><textarea class="form-textarea" id="journal" placeholder="写点什么吧，今天发生了什么有趣的事..."></textarea></div>
+      <div class="meow-card"><div class="mc-head"><span>⚖️</span> 体重记录</div><div class="mc-row"><input class="form-input" id="weight" type="number" placeholder="kg" step="0.1"><button class="btn btn-primary sm" onclick="saveWeight()">记录</button></div><div class="mc-sub" id="weightLast">最近：--</div></div>
+      <div class="meow-card"><div class="mc-head"><span>💧</span> 喝水记录 <span id="waterCount" class="mc-badge">0/8 杯</span></div><div class="water-cups" id="waterCups"></div><div class="mc-row" style="margin-top:12px"><button class="btn btn-secondary sm" onclick="changeWater(-1)">－</button><button class="btn btn-primary sm" onclick="changeWater(1)">＋ 一杯</button></div></div>
+      <div class="meow-card"><div class="mc-head"><span>🏃</span> 运动记录</div><div class="chip-group" id="exerciseChips"><span class="chip" data-ex="舞蹈">💃 舞蹈</span><span class="chip" data-ex="骑车">🚴 骑车</span><span class="chip" data-ex="羽毛球">🏸 羽毛球</span><span class="chip" data-ex="散步">🚶 散步</span><span class="chip" data-ex="游泳">🏊 游泳</span></div><div class="mc-row" style="margin-top:12px"><input class="form-input" id="exerciseMin" type="number" placeholder="分钟"><button class="btn btn-primary sm" onclick="saveExercise()">记录</button></div><div class="mc-sub" id="exerciseLast"></div></div>
+      <div class="meow-card"><div class="mc-head"><span>💊</span> 用药记录</div><div class="mc-row"><input class="form-input" id="medName" placeholder="药名"><input class="form-input" id="medTime" type="time" style="flex:0 0 100px"></div><button class="btn btn-primary sm" style="margin-top:10px" onclick="saveMed()">添加提醒</button><div class="mc-sub" id="medList"></div></div>
+      <div class="meow-card"><div class="mc-head"><span>🌸</span> 经期记录</div><div class="mc-row"><label class="switch"><input type="checkbox" id="periodToggle" onchange="togglePeriod()"><span class="slider"></span></label><span id="periodStatus" style="color:var(--text-secondary);font-size:13px">未开启</span></div><input class="form-input" id="periodNote" placeholder="备注（选填）" style="margin-top:10px"></div>
+      <div class="meow-card"><div class="mc-head"><span>💰</span> 支出</div><div class="mc-row"><input class="form-input" id="expense" type="number" placeholder="金额"><input class="form-input" id="expenseCat" placeholder="类别"></div><button class="btn btn-primary sm" style="margin-top:10px" onclick="saveExpense()">记录</button></div>
+      <div class="meow-card"><div class="mc-head"><span>💎</span> 收入</div><div class="mc-row"><input class="form-input" id="income" type="number" placeholder="金额"><input class="form-input" id="incomeCat" placeholder="来源"></div><button class="btn btn-primary sm" style="margin-top:10px" onclick="saveIncome()">记录</button></div>
+      <div class="meow-card"><div class="mc-head"><span>📚</span> 阅读</div><div class="mc-row"><input class="form-input" id="bookName" placeholder="书名"><input class="form-input" id="bookPages" type="number" placeholder="页数" style="flex:0 0 90px"></div><button class="btn btn-primary sm" style="margin-top:10px" onclick="saveReading()">记录</button></div>
+      <div class="meow-card"><div class="mc-head"><span>🍽️</span> 饮食</div><textarea class="form-textarea" id="diet" placeholder="今天吃了什么好吃的？"></textarea></div>
+      <div class="meow-card"><div class="mc-head"><span>🥤</span> 饮品</div><input class="form-input" id="beverage" placeholder="奶茶 / 咖啡 / 果汁 / 茶..."></div>
+      <div class="meow-card"><div class="mc-head"><span>🗣️</span> 每日英语</div><div class="mc-row"><input class="form-input" id="englishMin" type="number" placeholder="时长(分钟)"><input class="form-input" id="englishWords" type="number" placeholder="词汇量(个)" style="flex:0 0 110px"></div><button class="btn btn-primary sm" style="margin-top:10px" onclick="saveEnglish()">记录</button><div class="mc-sub" id="englishLast"></div></div>
+    </div>
+    <div class="card" style="margin-top:18px">
+      <button class="btn btn-primary" style="width:100%" onclick="saveMeow()">🐾 保存今日喵喵记录</button>
+      <div class="save-summary" id="meowSummary" style="display:none"></div>
+      <div class="sync-bar">
+        <button id="installBtn" class="btn btn-secondary sm" style="display:none" onclick="installApp()">📲 安装到桌面</button>
+        <button class="btn btn-secondary sm" onclick="exportData()">📤 导出备份</button>
+        <button class="btn btn-secondary sm" onclick="document.getElementById('importFile').click()">📥 导入备份</button>
+        <button class="btn btn-secondary sm" onclick="openSync()">☁️ 云同步</button>
+        <input type="file" id="importFile" accept="application/json" style="display:none" onchange="importData(this.files[0])">
+      </div>
+      <div class="save-summary" id="syncInfo" style="display:none"></div>
+    </div>
+  </section>
+
+</main>
+
+<script>
+// ===== Data =====
+const students = [
+  { name:'张明轩', id:'01号', avatar:'#F0A0B8', tags:['课代表','作文能手'], records:['10/25 背诵《春》优秀','10/23 课堂发言积极','10/20 作文被范文展示'] },
+  { name:'李思雨', id:'02号', avatar:'#6B9AC4', tags:['阅读之星'], records:['10/25 完成课外阅读3本','10/22 默写全对'] },
+  { name:'王浩然', id:'03号', avatar:'#D4A84B', tags:['进步明显'], records:['10/24 书写有进步','10/21 主动提问'] },
+  { name:'陈雨桐', id:'04号', avatar:'#AE9FBE', tags:['朗诵达人'], records:['10/25 朗读比赛获赞','10/19 背诵流畅'] },
+  { name:'刘子涵', id:'05号', avatar:'#E07A95', tags:['需关注'], records:['10/24 作业未完成','10/18 默写错5处'] },
+  { name:'赵欣怡', id:'06号', avatar:'#7CB88E', tags:['稳定优秀'], records:['10/25 测试92分','10/23 小组合作出色'] },
+];
+let tasks = [
+  { name:'每天整理当日作业完成情况', time:'17:00', freq:'每日', on:true },
+  { name:'每周五生成教学周报', time:'18:00', freq:'周五', on:true },
+  { name:'每月末归档优秀作业', time:'20:00', freq:'月末', on:false },
+];
+
+// ===== 名著女性力量名句（按日期循环）=====
+const quotes = [
+  { q: '我生来就是高山而非溪流，我欲于群峰之巅俯视平庸的沟壑。我生来就是人杰而非草芥，我欲于伟人之肩比肩于伟大的智者。', s: '—— 张桂梅《华坪女高校训》' },
+  { q: '她不是谁的附属品，她是她自己。她有自己的名字，自己的思想，自己的灵魂。', s: '—— 改写自 弗吉尼亚·伍尔夫《一间自己的房间》' },
+  { q: '一个女人最好的状态，是眼里写满故事，脸上不见风霜。不羡慕谁，不嘲笑谁，默默努力，活成自己喜欢的样子。', s: '—— 杨绛《我们仨》' },
+  { q: '世界很大，风景很美，机会很多，人生很短，不要蜷缩在一小块阴影里。你若盛开，清风自来。', s: '—— 三毛《送你一匹马》' },
+  { q: '女性的力量从来不是对抗，而是温柔地坚持。像水一样，看似柔软，却能穿透最坚硬的岩石。', s: '—— 改写自 冰心《繁星·春水》' },
+  { q: '不要因为走得太远，而忘记了当初为什么出发。每一个不曾起舞的日子，都是对生命的辜负。', s: '—— 尼采（女性视角解读）' },
+  { q: '愿你成为自己的太阳，无需凭借谁的光。愿你活得漂亮，爱得洒脱，笑得坦荡。', s: '—— 改写自 林徽因《你是人间的四月天》' },
+  { q: '真正的强大不是征服别人，而是战胜自己内心的怯懦和犹豫。每一步向前，都是在为自己加冕。', s: '—— 改写自 简·奥斯汀《傲慢与偏见》' },
+  { q: '温柔不是软弱，而是选择了善良；坚强不是冷漠，而是学会了保护自己。做一个内心丰盈的人。', s: '—— 改写自 居里夫人' },
+  { q: '生活不需要比别人过得好，但一定要比以前过得好。每一天都比昨天更爱自己一点，这就是最大的胜利。', s: '—— 改写自 村上春林《挪威的森林》' },
+  { q: '教育是一棵树摇动另一棵树，一朵云推动另一朵云，一个灵魂唤醒另一个灵魂。你的每一份付出，都在点亮某个孩子的未来。', s: '—— 卡尔·雅斯贝尔斯《什么是教育》' },
+  { q: '做老师最幸福的事，就是看着孩子们一天天长大，从懵懂到懂事，从怯懦到勇敢。这份陪伴本身，就是一种伟大的力量。', s: '—— 致每一位坚守讲台的教师' },
+  { q: '不要害怕改变，不要害怕未知。所有的成长都发生在舒适区之外。勇敢地迈出那一步吧，你比自己想象的更加强大。', s: '—— 改写自 海伦·凯勒《假如给我三天光明》' },
+  { q: '读书不是为了拿文凭或者发财，而是成为一个有温度、懂情趣、会思考的人。书籍是女人最好的化妆品。', s: '—— 杨绛' },
+  { q: '无论外界如何喧嚣，请守住内心的宁静。在文字的世界里，你可以是任何人，也可以只是你自己。', s: '—— 改写自 伍尔夫《一间自己的房间》' },
+];
+
+// ===== 每日欢迎语（每天不同，按日期循环）=====
+const welcomes = [
+  { w: '欢迎回到工作台 💕', sub: '新的一周开始啦，今天也是闪闪发光的 Lydia 呀 ✨' },
+  { w: '周一也要元气满满哦 🌸', sub: '人生这份答卷怎么写都是满分，你只管认真发光 🌟' },
+  { w: '周二好呀～把担心换成期待 🎀', sub: '人生这份答卷怎么写都是满分 🌻' },
+  { w: '周三了！已经过半啦 🦋', sub: '人生这份答卷怎么写都是满分，保持节奏稳住心态 💪' },
+  { w: '周四加油！胜利就在前方 💗', sub: '人生这份答卷怎么写都是满分，再坚持一下 ⭐' },
+  { w: '周五快乐！马上就解放啦 🎉', sub: '人生这份答卷怎么写都是满分，收尾工作做好 🍰' },
+  { w: '周末愉快呀～好好休息 ☺️', sub: '人生这份答卷怎么写都是满分，充电完毕继续发光 ✨' },
+  // ---- 额外池子：让每天的副标题也随机变化 ----
+  { w: '今天也要开心鸭 🐥', sub: '人生这份答卷怎么写都是满分，微笑是最好的妆容 😊' },
+  { w: '又是被自己惊艳到的一天 ✨', sub: '人生这份答卷怎么写都是满分，你比自己想象的更棒 💖' },
+  { w: 'Lydia 今日上线～🎀', sub: '人生这份答卷怎么写都是满分，慢慢来比较快 🌷' },
+  { w: '美好正在路上 🌈', sub: '人生这份答卷怎么写都是满分，所有好运都在赶来 ☀️' },
+  { w: '保持热爱 奔赴山海 🌊', sub: '人生这份答卷怎么写都是满分，每一步都算数 🗺️' },
+  { w: '今天也要好好爱自己 💕', sub: '人生这份答卷怎么写都是满分，你值得世间所有温柔 🌸' },
+  { w: '生活明朗 万物可爱 🐱', sub: '人生这份答卷怎么写都是满分，小确幸就在身边 🎐' },
+];
+
+// ===== Navigation =====
+function switchModule(moduleId, el) {
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.querySelectorAll('.module-page').forEach(p => p.classList.remove('active'));
+  if (el) el.classList.add('active');
+  const page = document.getElementById('module-' + moduleId);
+  if (page) page.classList.add('active');
+}
+function switchTab(btn, tabId) {
+  const parent = btn.closest('.module-page');
+  parent.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  parent.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+  btn.classList.add('active');
+  const tab = document.getElementById(tabId);
+  if (tab) tab.classList.add('active');
+}
+
+// ===== Clock =====
+function updateClock() {
+  const now = new Date();
+  const h = String(now.getHours()).padStart(2,'0');
+  const m = String(now.getMinutes()).padStart(2,'0');
+  const s = String(now.getSeconds()).padStart(2,'0');
+  document.getElementById('clockH').textContent = h;
+  document.getElementById('clockM').textContent = m;
+  document.getElementById('clockS').textContent = s;
+
+  // Date
+  const weekDays = ['日','一','二','三','四','五','六'];
+  const dateStr = `${now.getFullYear()} 年 ${now.getMonth()+1} 月 ${now.getDate()} 日 · 星期${weekDays[now.getDay()]}`;
+  document.getElementById('homeDate').textContent = dateStr;
+}
+
+// ===== Energy Quote =====
+function setEnergyQuote() {
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(),0,0)) / 86400000);
+  const qi = quotes[dayOfYear % quotes.length];
+  document.getElementById('energyQuote').textContent = qi.q;
+  document.getElementById('energySource').textContent = qi.s;
+}
+
+// ===== Kitty Welcome（按日期循环，每天不同）=====
+function setKittyWelcome() {
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(),0,0)) / 86400000);
+  const w = welcomes[dayOfYear % welcomes.length];
+  document.getElementById('kittyWelcome').innerHTML = w.w;
+  document.getElementById('kittySubtitle').textContent = w.sub;
+}
+
+// ===== Output Toggle =====
+function toggleOutput(el) { el.classList.toggle('selected'); }
+
+// ===== Generate Lesson =====
+function generateLesson() {
+  const title = document.getElementById('lessonTitle').value || '《春》';
+  const unit = document.getElementById('unit').value || '第一单元';
+  const grade = document.getElementById('grade').value || '七年级上册';
+  const extra = document.getElementById('extraReq').value;
+  const selected = [];
+  document.querySelectorAll('.output-card.selected').forEach(c => selected.push(c.querySelector('.oc-title').textContent));
+
+  const result = `╔═══════════════════════════════════════╗
+║   📋 ${title} 教学设计方案              ║
+╚═══════════════════════════════════════╝
+
+【基本信息】年级：${grade} | 单元：${unit} | 课题：${title}
+${extra ? '\n【补充要求】'+extra : ''}
+
+【生成内容】${selected.map(s=>'\n  ✓ '+s).join('')}
+
+━━━ 📄 教案文档 ━━━
+一、教学目标
+  1. 知识与能力：掌握生字词，理解主要内容，学习修辞手法。
+  2. 过程与方法：通过朗读品味语言之美，运用圈点批注法细读。
+  3. 情感态度：感受作者之情，培养热爱自然、热爱生活的情趣。
+二、教学重点：有感情朗读；学习比喻、拟人等修辞。
+三、教学难点：揣摩词语表达效果，培养语感。
+四、课时：2课时
+
+━━━ 📊 PPT课件大纲 ━━━
+Slide1 封面 | Slide2 目标 | Slide3 作者 | Slide4 字词
+Slide5 结构 | Slide6-10 五幅春景图 | Slide11 修辞赏析
+Slide12 小练笔 | Slide13 作业 | Slide14 致谢
+
+━━━ 📋 练习题 & ✅ 导学案（略）`;
+
+  document.getElementById('resultText').textContent = result;
+  document.getElementById('resultPanel').classList.add('show');
+  document.getElementById('resultPanel').scrollIntoView({behavior:'smooth'});
+}
+function clearForm() {
+  document.getElementById('lessonTitle').value='';
+  document.getElementById('extraReq').value='';
+  document.querySelectorAll('.output-card').forEach(c => c.classList.add('selected'));
+  document.getElementById('resultPanel').classList.remove('show');
+}
+function copyResult() { navigator.clipboard.writeText(document.getElementById('resultText').textContent).then(()=>alert('已复制到剪贴板！')); }
+
+// ===== Upload =====
+function triggerUpload() { document.getElementById('fileInput').click(); }
+function handleFiles(files) {
+  if(files.length>0){document.getElementById('uploadZone').innerHTML=`<div class="uz-icon">✅</div><p>已选择 ${files.length} 个文件</p><p class="uz-hint">${Array.from(files).map(f=>f.name).join('、')}</p>`;}
+}
+function startGrading() { alert('🔍 启动AI智能批改...\n\n识别笔迹 → 匹配答案 → 统计错误 → 生成看板'); }
+
+// ===== Students =====
+function renderStudents() {
+  document.getElementById('studentGrid').innerHTML = students.map(s=>`
+    <div class="student-card">
+      <div class="sc-header"><div class="sc-avatar" style="background:${s.avatar}">${s.name[0]}</div><div><div class="sc-name">${s.name}</div><div class="sc-id">${s.id}</div></div></div>
+      <div class="sc-tags">${s.tags.map(t=>`<span class="sc-tag">${t}</span>`).join('')}</div>
+      <div class="sc-record">${s.records.map(r=>`<div class="sc-record-item"><span class="sc-record-dot">●</span>${r}</div>`).join('')}</div>
+    </div>`).join('');
+  const sel=document.getElementById('recordStudent'); students.forEach(s=>{const o=document.createElement('option');o.value=s.name;o.textContent=s.name;sel.appendChild(o);});
+  ['rwStudent','mtStudent'].forEach(id=>{const sl=document.getElementById(id);if(sl){students.forEach(s=>{const o=document.createElement('option');o.value=s.name;o.textContent=s.name;sl.appendChild(o);});}});
+}
+function addRecord() {
+  const st=document.getElementById('recordStudent').value, c=document.getElementById('recordContent').value;
+  if(!st||!c){alert('请选择学生并填写记录内容');return;}
+  const d=new Date(), s=students.find(x=>x.name===st);
+  if(s){s.records.unshift(`${d.getMonth()+1}/${d.getDate()} ${c}`);renderStudents();renderLedger();}
+  document.getElementById('recordContent').value=''; switchTab(document.querySelector('#r-ledger .tab-btn'),'r-students'); alert(`✅ 已为 ${st} 添加记录`);
+}
+function quickRecord(t){document.getElementById('recordContent').value=t;}
+function generateReports(){alert('🎉 基于本学期所有记录生成个性化评语...');}
+
+// ===== Tasks =====
+function renderTasks(){document.getElementById('taskList').innerHTML=tasks.map((t,i)=>`
+  <div class="task-item"><div class="ti-checkbox ${t.on?'checked':''}" onclick="toggleTask(${i})">${t.on?'✓':''}</div>
+  <div class="ti-info"><div class="ti-title">${t.name}</div><div class="ti-desc">重复频率：${t.freq}</div></div>
+  <div class="ti-time">⏰ ${t.time}</div>
+  <div class="ti-toggle ${t.on?'on':''}" onclick="toggleTask(${i})"></div></div>`).join('');}
+function toggleTask(i){tasks[i].on=!tasks[i].on;renderTasks();}
+function addTask(){const n=document.getElementById('newTaskName').value.trim(),t=document.getElementById('newTaskTime').value;if(!n)return;tasks.push({name:n,time:t||'09:00',freq:'自定义',on:true});document.getElementById('newTaskName').value='';document.getElementById('newTaskTime').value='';renderTasks();}
+function presetTask(text){document.getElementById('newTaskName').value=text;const m=text.match(/(\d{1,2}:\d{2})/);if(m)document.getElementById('newTaskTime').value=m[1];}
+
+// ===== Meow =====
+const meow={mood:'',weight:[],water:0,exercise:[],meds:[],period:false,expenses:[],incomes:[],reading:[],english:[]};
+document.querySelectorAll('#moodSelector button').forEach(b=>{b.onclick=()=>{document.querySelectorAll('#moodSelector button').forEach(x=>x.classList.remove('sel'));b.classList.add('sel');meow.mood=b.dataset.mood;}});
+function renderWater(){document.getElementById('waterCount').textContent=meow.water+'/8 杯';document.getElementById('waterCups').innerHTML=Array.from({length:8},(_,i)=>`<div class="cup ${i<meow.water?'filled':''}"></div>`).join('');}
+function changeWater(d){meow.water=Math.max(0,Math.min(8,meow.water+d));renderWater();}
+document.querySelectorAll('#exerciseChips .chip').forEach(c=>c.onclick=()=>c.classList.toggle('sel'));
+function saveExercise(){const m=document.getElementById('exerciseMin').value,s=[...document.querySelectorAll('#exerciseChips .chip.sel')].map(c=>c.dataset.ex);if(!m||!s.length){alert('请选择运动类型并输入时长');return;}s.forEach(x=>meow.exercise.push(x+' '+m+'分钟'));document.getElementById('exerciseLast').innerHTML='已记录：'+meow.exercise.join('、');document.getElementById('exerciseMin').value='';document.querySelectorAll('#exerciseChips .chip').forEach(c=>c.classList.remove('sel'));}
+function saveWeight(){const w=document.getElementById('weight').value;if(!w)return;meow.weight.push(w);document.getElementById('weightLast').textContent='最近：'+w+' kg（共'+meow.weight.length+'次）';document.getElementById('weight').value='';}
+function saveMed(){const n=document.getElementById('medName').value,t=document.getElementById('medTime').value;if(!n)return;meow.meds.push(n+(t?' @'+t:''));document.getElementById('medList').innerHTML=meow.meds.map(m=>'• '+m).join('<br>');document.getElementById('medName').value='';document.getElementById('medTime').value='';}
+function togglePeriod(){meow.period=document.getElementById('periodToggle').checked;document.getElementById('periodStatus').textContent=meow.period?'已开启 🌸':'未开启';}
+function saveExpense(){const v=document.getElementById('expense').value,c=document.getElementById('expenseCat').value;if(!v)return;meow.expenses.push(v+(c?'（'+c+'）':''));document.getElementById('expense').value='';document.getElementById('expenseCat').value='';}
+function saveIncome(){const v=document.getElementById('income').value,c=document.getElementById('incomeCat').value;if(!v)return;meow.incomes.push(v+(c?'（'+c+'）':''));document.getElementById('income').value='';document.getElementById('incomeCat').value='';}
+function saveReading(){const b=document.getElementById('bookName').value,p=document.getElementById('bookPages').value;if(!b)return;meow.reading.push(b+(p?' '+p+'页':''));document.getElementById('bookName').value='';document.getElementById('bookPages').value='';}
+function saveEnglish(){const m=document.getElementById('englishMin').value,w=document.getElementById('englishWords').value;if(!m&&!w){alert('请填写学习时长或词汇量');return;}meow.english.push({min:m||0,words:w||0,when:new Date().toLocaleTimeString()});document.getElementById('englishLast').innerHTML='今日已记 '+meow.english.length+' 次：'+meow.english.map(e=>e.min+'分钟/'+e.words+'词').join('、');document.getElementById('englishMin').value='';document.getElementById('englishWords').value='';}
+function saveMeow(){
+  meow.diet=document.getElementById('diet').value; meow.beverage=document.getElementById('beverage').value; meow.moodNote=document.getElementById('moodNote').value;
+  const lines=[];
+  if(meow.mood)lines.push('🌈 心情：'+meow.mood+(meow.moodNote?'（'+meow.moodNote+'）':''));
+  if(meow.water)lines.push('💧 喝水：'+meow.water+' 杯');
+  if(meow.exercise.length)lines.push('🏃 运动：'+meow.exercise.join('、'));
+  if(meow.meds.length)lines.push('💊 用药：'+meow.meds.join('、'));
+  if(meow.period)lines.push('🌸 经期：已记录');
+  if(meow.expenses.length)lines.push('💰 支出：'+meow.expenses.join('、'));
+  if(meow.incomes.length)lines.push('💎 收入：'+meow.incomes.join('、'));
+  if(meow.reading.length)lines.push('📚 阅读：'+meow.reading.join('、'));
+  if(meow.english.length)lines.push('🗣️ 英语：'+meow.english.map(e=>e.min+'分钟/'+e.words+'词').join('、'));
+  if(meow.diet)lines.push('🍽️ 饮食：'+meow.diet);
+  if(meow.beverage)lines.push('🥤 饮品：'+meow.beverage);
+  const sum=document.getElementById('meowSummary');sum.style.display='block';
+  sum.innerHTML='🐾 <b>今日喵喵记录已保存！</b><br>'+(lines.length?lines.join('<br>'):'（还没有记录哦，快添加吧~）');
+  saveAll();
+}
+
+// ===== 首页猫咪图片（27张每天自动切换）=====
+function setHomeKittyImage() {
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(),0,0)) / 86400000);
+  const idx = dayOfYear % 27; // 27张图片循环
+  const padded = String(idx).padStart(2, '0');
+  document.getElementById('homeKittyImg').src = 'avatars/avatar' + padded + '.jpg';
+}
+
+// ===== 作业批改 · 早读任务 =====
+let readTasks = [
+  { text: '朗读《春》全文（要求：有感情、注意停顿）', done: true },
+  { text: '背诵《观沧海》《闻王昌龄左迁龙标遥有此寄》', done: false },
+  { text: '默写《次北固山下》并自查订正', done: false },
+];
+function renderRead() {
+  document.getElementById('readList').innerHTML = readTasks.map((t,i)=>`
+    <div class="task-item"><div class="ti-checkbox ${t.done?'checked':''}" onclick="readTasks[${i}].done=!readTasks[${i}].done;renderRead()">${t.done?'✓':''}</div>
+    <div class="ti-info"><div class="ti-title" style="${t.done?'text-decoration:line-through;color:var(--text-muted)':''}">${t.text}</div></div></div>`).join('');
+  const done = readTasks.filter(t=>t.done).length;
+  document.getElementById('readDoneTxt').textContent = `${done}/${readTasks.length} 已完成`;
+}
+function addRead() { const v=document.getElementById('newRead').value.trim(); if(!v)return; readTasks.push({text:v,done:false}); document.getElementById('newRead').value=''; renderRead(); }
+
+// ===== 作业批改 · 每日作业 =====
+let homeworks = [
+  { subj:'语文', content:'背诵第5课生字词并默写', due:'2026-07-29' },
+  { subj:'语文', content:'完成《春》课后练习题', due:'2026-07-29' },
+];
+function renderHomework() {
+  document.getElementById('homeworkList').innerHTML = homeworks.length ? homeworks.map((h,i)=>`
+    <div class="task-item"><div class="ti-info"><div class="ti-title">[${h.subj}] ${h.content}</div><div class="ti-desc">截止：${h.due}</div></div>
+    <button class="btn btn-secondary sm" onclick="homeworks.splice(${i},1);renderHomework()">删除</button></div>`).join('')
+    : '<div style="font-size:13px;color:var(--text-muted);padding:8px">今日尚未布置作业～</div>';
+}
+function addHomework() {
+  const s=document.getElementById('hwSubj').value, c=document.getElementById('hwContent').value, d=document.getElementById('hwDue').value;
+  if(!c){alert('请填写作业内容');return;} homeworks.unshift({subj:s,content:c,due:d||'待定'});
+  document.getElementById('hwContent').value=''; document.getElementById('hwDue').value=''; renderHomework();
+}
+
+// ===== 作业批改 · 作业提交 =====
+let submits = [
+  { name:'张明轩', status:'已交' }, { name:'李思雨', status:'已交' }, { name:'王浩然', status:'已交' },
+  { name:'陈雨桐', status:'已交' }, { name:'刘子涵', status:'未交' }, { name:'赵欣怡', status:'迟交' },
+];
+function submitColor(st){ return st==='已交' ? ['rgba(124,184,142,0.15)','#5A9A68'] : st==='迟交' ? ['rgba(212,168,75,0.15)','#B08848'] : ['rgba(224,122,149,0.15)','#C46B85']; }
+function renderSubmit() {
+  document.getElementById('submitList').innerHTML = submits.map((s,i)=>{ const [bg,col]=submitColor(s.status); return `
+    <div class="task-item"><div class="ti-info"><div class="ti-title">${s.name}</div></div>
+    <span class="ti-time" style="background:${bg};color:${col}">${s.status}</span>
+    <div class="ti-toggle ${s.status==='已交'?'on':''}" onclick="toggleSubmit(${i})"></div></div>`; }).join('');
+  const done=submits.filter(s=>s.status==='已交').length, late=submits.filter(s=>s.status==='迟交').length, miss=submits.filter(s=>s.status==='未交').length;
+  document.getElementById('submitSummary').textContent = `已交 ${done} · 迟交 ${late} · 未交 ${miss}`;
+}
+function toggleSubmit(i){ submits[i].status = submits[i].status==='已交' ? '未交' : '已交'; renderSubmit(); }
+
+// ===== 学情记录 · 每日考勤 =====
+const attendStatus = {};
+function renderAttendance() {
+  document.getElementById('attendBody').innerHTML = students.map(s=>{
+    const st = attendStatus[s.name] || '出勤';
+    const opts = ['出勤','迟到','请假','缺勤'].map(o=>`<option ${o===st?'selected':''}>${o}</option>`).join('');
+    return `<tr><td>${s.name}</td><td><select class="form-select" style="padding:6px 10px;font-size:12px" onchange="attendStatus['${s.name}']=this.value;updateAttendSummary()">${opts}</select></td><td><input class="form-input" style="padding:6px 10px;font-size:12px" placeholder="备注"></td></tr>`;
+  }).join('');
+  updateAttendSummary();
+}
+function updateAttendSummary() {
+  const vals = Object.values(attendStatus);
+  const absent = vals.filter(v=>v==='缺勤').length, late = vals.filter(v=>v==='迟到').length, leave = vals.filter(v=>v==='请假').length;
+  const present = students.length - absent - late - leave;
+  document.getElementById('attendSummary').textContent = `出勤 ${present} · 迟到 ${late} · 请假 ${leave} · 缺勤 ${absent}`;
+}
+
+// ===== 学情记录 · 学情台账（最近记录汇总）=====
+function renderLedger() {
+  const items=[]; students.forEach(s=>s.records.forEach(r=>items.push({name:s.name,text:r})));
+  document.getElementById('ledgerList').innerHTML = items.length ? items.map(it=>`
+    <div class="task-item"><div class="ti-info"><div class="ti-title">${it.name}</div><div class="ti-desc">${it.text}</div></div></div>`).join('')
+    : '<div style="font-size:13px;color:var(--text-muted);padding:8px">暂无记录，去上方快速记录吧～</div>';
+}
+
+// ===== 学情记录 · 奖惩记录 =====
+let rewards = [
+  { name:'张明轩', type:'🌟 奖励', reason:'默写全对，提出表扬' },
+  { name:'刘子涵', type:'⚠️ 惩罚', reason:'作业连续未完成，已约谈' },
+];
+function renderReward() {
+  document.getElementById('rewardList').innerHTML = rewards.map((r,i)=>`
+    <div class="task-item"><div class="ti-info"><div class="ti-title">${r.name} · ${r.type}</div><div class="ti-desc">${r.reason}</div></div>
+    <button class="btn btn-secondary sm" onclick="rewards.splice(${i},1);renderReward()">删除</button></div>`).join('');
+}
+function addReward() {
+  const n=document.getElementById('rwStudent').value, t=document.getElementById('rwType').value, r=document.getElementById('rwReason').value;
+  if(!n||!r){alert('请选择学生并填写事由');return;} rewards.unshift({name:n,type:t,reason:r});
+  document.getElementById('rwReason').value=''; renderReward();
+}
+
+// ===== 学情记录 · 心理健康 =====
+let mental = [ { name:'刘子涵', mood:'😟 低落', note:'近期沉默寡言，已安排谈心' } ];
+function renderMental() {
+  document.getElementById('mentalList').innerHTML = mental.map((m,i)=>`
+    <div class="task-item"><div class="ti-info"><div class="ti-title">${m.name} · ${m.mood}</div><div class="ti-desc">${m.note||''}</div></div>
+    <button class="btn btn-secondary sm" onclick="mental.splice(${i},1);renderMental()">删除</button></div>`).join('');
+}
+function addMental() {
+  const n=document.getElementById('mtStudent').value, mo=document.getElementById('mtMood').value, no=document.getElementById('mtNote').value;
+  if(!n){alert('请选择学生');return;} mental.unshift({name:n,mood:mo,note:no});
+  document.getElementById('mtNote').value=''; renderMental();
+}
+
+// ===== 学情记录 · 沟通记录 =====
+let comms = [ { who:'张明轩家长', way:'微信', content:'反馈近期课堂发言积极，家长表示欣慰' } ];
+function renderComm() {
+  document.getElementById('commList').innerHTML = comms.map((c,i)=>`
+    <div class="task-item"><div class="ti-info"><div class="ti-title">${c.who} · ${c.way}</div><div class="ti-desc">${c.content}</div></div>
+    <button class="btn btn-secondary sm" onclick="comms.splice(${i},1);renderComm()">删除</button></div>`).join('');
+}
+function addComm() {
+  const w=document.getElementById('cmWho').value, wy=document.getElementById('cmWay').value, ct=document.getElementById('cmContent').value;
+  if(!w||!ct){alert('请填写沟通对象与内容');return;} comms.unshift({who:w,way:wy,content:ct});
+  document.getElementById('cmWho').value=''; document.getElementById('cmContent').value=''; renderComm();
+}
+
+// ===== 数据持久化 & 云同步 =====
+const LS_KEY='meow_workbench_v1';
+const SYNC_KEY='meow_sync_url';
+function getState(){ return {meow, students, tasks, readTasks, homeworks, submits, attendStatus, rewards, mental, comms}; }
+function setState(st){
+  if(!st)return;
+  if(st.meow)Object.assign(meow, st.meow);
+  if(st.students){students.length=0;st.students.forEach(s=>students.push(s));}
+  if(st.tasks){tasks.length=0;st.tasks.forEach(t=>tasks.push(t));}
+  if(st.readTasks){readTasks.length=0;st.readTasks.forEach(t=>readTasks.push(t));}
+  if(st.homeworks){homeworks.length=0;st.homeworks.forEach(t=>homeworks.push(t));}
+  if(st.submits){submits.length=0;st.submits.forEach(t=>submits.push(t));}
+  if(st.attendStatus)Object.assign(attendStatus, st.attendStatus);
+  if(st.rewards){rewards.length=0;st.rewards.forEach(t=>rewards.push(t));}
+  if(st.mental){mental.length=0;st.mental.forEach(t=>mental.push(t));}
+  if(st.comms){comms.length=0;st.comms.forEach(t=>comms.push(t));}
+}
+function saveAll(){ try{localStorage.setItem(LS_KEY, JSON.stringify(getState()));}catch(e){} }
+function loadAll(){ try{const raw=localStorage.getItem(LS_KEY); if(raw)setState(JSON.parse(raw));}catch(e){} }
+function restoreMeowDisplays(){
+  if(meow.weight.length)document.getElementById('weightLast').textContent='最近：'+meow.weight[meow.weight.length-1]+' kg（共'+meow.weight.length+'次）';
+  if(meow.meds.length)document.getElementById('medList').innerHTML=meow.meds.map(m=>'• '+m).join('<br>');
+  if(meow.exercise.length)document.getElementById('exerciseLast').innerHTML='已记录：'+meow.exercise.join('、');
+  if(meow.english.length)document.getElementById('englishLast').innerHTML='今日已记 '+meow.english.length+' 次：'+meow.english.map(e=>e.min+'分钟/'+e.words+'词').join('、');
+  if(meow.period){const t=document.getElementById('periodToggle'); if(t)t.checked=true; const p=document.getElementById('periodStatus'); if(p)p.textContent='已开启 🌸';}
+  renderWater();
+}
+function exportData(){
+  const blob=new Blob([JSON.stringify(getState(),null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='每日喵喵-备份-'+new Date().toISOString().slice(0,10)+'.json'; a.click();
+  showSync('📤 已导出备份文件，可发到另一台设备后用「导入备份」恢复～');
+}
+function importData(file){
+  if(!file)return; const r=new FileReader();
+  r.onload=()=>{try{setState(JSON.parse(r.result)); renderAll(); restoreMeowDisplays(); saveAll(); showSync('📥 导入成功，数据已恢复！');}catch(e){showSync('⚠️ 文件格式不对，导入失败');}};
+  r.readAsText(file);
+}
+function showSync(msg){const e=document.getElementById('syncInfo'); if(e){e.style.display='block';e.innerHTML=msg;}}
+function openSync(){
+  const cur=localStorage.getItem(SYNC_KEY)||'';
+  const url=prompt('设置云同步地址（留空查看说明）：\n\n将工作台数据实时同步到该地址。\n需要你部署附带的 sync-server.js（或用任意支持 JSON 的接口）。\n地址需包含 ?key= 参数，例如：\n  http://你的服务器:8787/sync?key=meow\n\n当前地址：'+cur, cur);
+  if(url===null)return;
+  if(url===''){showSync('☁️ 未设置同步地址。<br><br>方式一：用「导出 / 导入备份」在两台设备间手动搬运数据（无需服务器）。<br>方式二：部署 sync-server.js 后填入地址，即可手机 ↔ 电脑实时同步。');localStorage.removeItem(SYNC_KEY);return;}
+  localStorage.setItem(SYNC_KEY,url); showSync('☁️ 已设置同步地址，正在同步...'); syncPush();
+}
+async function syncPush(){
+  const url=localStorage.getItem(SYNC_KEY); if(!url)return;
+  try{ const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(getState())});
+    showSync(res.ok?'☁️ 已上传到云端 ✅ '+new Date().toLocaleTimeString():'☁️ 上传失败：'+res.status);
+  }catch(e){showSync('☁️ 无法连接同步服务器（'+(e.message||'')+'），请检查地址或网络');}
+}
+async function syncPull(){
+  const url=localStorage.getItem(SYNC_KEY); if(!url)return;
+  try{ const res=await fetch(url); if(!res.ok)return; const data=await res.json();
+    if(data&&Object.keys(data).length){ const before=JSON.stringify(getState()); setState(data);
+      if(before!==JSON.stringify(getState())){renderAll();restoreMeowDisplays();showSync('☁️ 已从云端拉取最新数据 ✅ '+new Date().toLocaleTimeString());} }
+  }catch(e){}
+}
+function renderAll(){
+  renderStudents(); renderTasks(); renderWater();
+  renderRead(); renderHomework(); renderSubmit();
+  renderAttendance(); renderLedger(); renderReward(); renderMental(); renderComm();
+}
+// ===== PWA 安装到桌面 =====
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',(e)=>{e.preventDefault();deferredPrompt=e;const b=document.getElementById('installBtn');if(b)b.style.display='inline-block';});
+function installApp(){if(deferredPrompt){deferredPrompt.prompt();deferredPrompt.userChoice.then(()=>{deferredPrompt=null;const b=document.getElementById('installBtn');if(b)b.style.display='none';});}}
+if('serviceWorker' in navigator){ window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{});}); }
+
+// ===== Init =====
+loadAll();
+updateClock(); setInterval(updateClock, 1000);
+setEnergyQuote(); setKittyWelcome(); setHomeKittyImage();
+renderAll(); restoreMeowDisplays();
+setInterval(saveAll, 3000);     // 每 3 秒自动本地保存
+setInterval(syncPull, 8000);    // 每 8 秒自动从云端拉取（若已设置同步地址）
+syncPull();
+</script>
+</body>
+</html>
